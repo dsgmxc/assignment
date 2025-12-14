@@ -729,3 +729,72 @@ input[type="range"]::-webkit-slider-thumb {
         font-size: 2rem;
     }
 }
+/* 修复Three.js画布显示问题 */
+#electronCanvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    outline: none;
+}
+
+/* 添加Three.js渲染器样式 */
+.three-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* 改进加载状态 */
+.loading-overlay {
+    background-color: rgba(15, 23, 42, 0.95);
+    padding: 1.5rem 2.5rem;
+    border-radius: var(--border-radius);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    z-index: 10;
+    backdrop-filter: blur(5px);
+}
+
+.loading-overlay span {
+    font-size: 1.1rem;
+    color: var(--primary-color);
+}
+
+/* 添加坐标轴标记 */
+.coordinate-label {
+    position: absolute;
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.coordinate-x { color: #ff3333; }
+.coordinate-y { color: #33ff33; }
+.coordinate-z { color: #3377ff; }
+
+/* 添加控制面板工具提示 */
+.control-btn[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    margin-bottom: 5px;
+    pointer-events: none;
+}
+
+.control-btn {
+    position: relative;
+}
