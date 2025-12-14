@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
-        /* 保持原有CSS样式不变 */
+        /* CSS样式保持不变 */
         :root {
             --primary-color: #3b82f6;
             --primary-dark: #2563eb;
@@ -340,6 +340,18 @@
             animation-iteration-count: infinite;
         }
 
+        .electron-1 {
+            animation: orbit1 4s linear infinite;
+        }
+
+        .electron-2 {
+            animation: orbit2 6s linear infinite;
+        }
+
+        .electron-3 {
+            animation: orbit3 8s linear infinite;
+        }
+
         /* 分区标题 */
         .section-title {
             font-size: 2.8rem;
@@ -394,6 +406,9 @@
             height: 100%;
             display: block;
             outline: none;
+            position: absolute;
+            top: 0;
+            left: 0;
         }
 
         .canvas-overlay {
@@ -1191,47 +1206,7 @@
                 opacity: 1;
             }
         }
-        
-        /* 调试信息样式 */
-        .debug-info {
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.7);
-            color: #00ff00;
-            padding: 5px 10px;
-            font-size: 12px;
-            font-family: monospace;
-            border-radius: 3px;
-            z-index: 9999;
-            display: none;
-        }
-        
-        .webgl-error {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(239, 68, 68, 0.9);
-            color: white;
-            padding: 2rem;
-            border-radius: var(--border-radius);
-            text-align: center;
-            z-index: 100;
-            max-width: 500px;
-            width: 90%;
-            display: none;
-        }
-        
-        .webgl-error h3 {
-            margin-bottom: 1rem;
-        }
-        
-        .webgl-error ul {
-            text-align: left;
-            margin: 1rem 0;
-            padding-left: 1.5rem;
-        }
+        /* CSS样式结束 */
     </style>
 </head>
 <body>
@@ -1283,9 +1258,9 @@
                 <div class="canvas-container">
                     <canvas id="electronCanvas"></canvas>
                     <div class="canvas-overlay">
-                        <div class="loading-overlay" id="loadingText">
+                        <div class="loading-overlay" id="loadingText" style="display: none;">
                             <i class="fas fa-spinner fa-spin"></i>
-                            <span>正在初始化可视化引擎...</span>
+                            <span>正在生成电子云数据...</span>
                         </div>
                         <div class="canvas-controls">
                             <button class="control-btn" id="rotateBtn" title="旋转视图">
@@ -1301,20 +1276,6 @@
                                 <i class="fas fa-expand-arrows-alt"></i>
                             </button>
                         </div>
-                    </div>
-                    
-                    <!-- WebGL错误信息 -->
-                    <div class="webgl-error" id="webglError">
-                        <h3><i class="fas fa-exclamation-triangle"></i> WebGL不可用</h3>
-                        <p>您的浏览器不支持WebGL或WebGL已被禁用。</p>
-                        <p>请尝试以下方法：</p>
-                        <ul>
-                            <li>更新浏览器到最新版本</li>
-                            <li>在浏览器设置中启用WebGL</li>
-                            <li>尝试使用Chrome、Firefox或Edge浏览器</li>
-                            <li>检查显卡驱动是否更新</li>
-                        </ul>
-                        <button id="retryBtn" style="margin-top: 1rem; padding: 0.5rem 1rem; background: var(--primary-color); color: white; border: none; border-radius: 5px; cursor: pointer;">重试</button>
                     </div>
                 </div>
 
@@ -1498,11 +1459,7 @@
         </div>
     </footer>
 
-    <!-- 调试信息 -->
-    <div class="debug-info" id="debugInfo"></div>
-
     <script>
-        // JavaScript代码开始
         // 量子态数据
         const QuantumStates = {
             states: [
@@ -1523,7 +1480,7 @@
             }
         };
 
-        // 3D可视化引擎 - 完全重写以确保稳定性
+        // 3D可视化引擎 - 修复版本
         const VisualizationEngine = {
             scene: null,
             camera: null,
@@ -1532,6 +1489,8 @@
             electronCloud: null,
             nucleus: null,
             axesHelper: null,
+            directionalLight: null,
+            pointLight: null,
             
             isInitialized: false,
             isAnimating: true,
@@ -1545,75 +1504,80 @@
                 try {
                     console.log('开始初始化Three.js可视化引擎...');
                     
-                    // 检查Three.js是否加载
                     if (typeof THREE === 'undefined') {
-                        console.error('Three.js库未加载');
-                        this.showWebGLError('Three.js库未加载');
+                        console.error('Three.js is not loaded');
                         return false;
                     }
                     
                     const canvas = document.getElementById(canvasId);
                     if (!canvas) {
-                        console.error(`Canvas元素 "${canvasId}" 未找到`);
+                        console.error(`Canvas element with id "${canvasId}" not found.`);
                         return false;
                     }
                     
-                    console.log('Canvas找到，创建Three.js场景...');
+                    console.log('Canvas found, creating Three.js scene...');
                     
-                    // 1. 创建场景
+                    // 创建Three.js场景
                     this.scene = new THREE.Scene();
                     this.scene.background = new THREE.Color(0x0f172a);
                     
-                    // 2. 创建相机
-                    const width = canvas.clientWidth;
-                    const height = canvas.clientHeight;
+                    // 创建相机
+                    const width = canvas.clientWidth || 800;
+                    const height = canvas.clientHeight || 600;
                     
-                    this.camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-                    this.camera.position.set(0, 0, 15);
+                    this.camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
+                    this.camera.position.set(0, 0, 25);
+                    this.camera.lookAt(0, 0, 0);
                     
-                    // 3. 创建渲染器 - 使用更可靠的参数
+                    // 创建渲染器 - 关键修复
                     this.renderer = new THREE.WebGLRenderer({ 
                         canvas: canvas,
                         antialias: true,
                         alpha: false,
-                        powerPreference: "high-performance",
-                        preserveDrawingBuffer: true // 允许截图
+                        preserveDrawingBuffer: true  // 修复截图问题
                     });
                     
+                    // 设置渲染器大小 - 关键修复
                     this.renderer.setSize(width, height, false);
-                    this.renderer.setPixelRatio(window.devicePixelRatio);
-                    this.renderer.setClearColor(0x0f172a, 1);
+                    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
                     
-                    console.log('WebGL渲染器创建成功:', this.renderer);
+                    // 确保画布可见
+                    canvas.style.display = 'block';
+                    canvas.style.width = '100%';
+                    canvas.style.height = '100%';
                     
-                    // 4. 添加光源
+                    console.log('Renderer created and configured');
+                    
+                    // 添加光源
                     this.addLights();
                     
-                    // 5. 添加坐标轴
+                    // 添加坐标轴
                     this.addAxes();
                     
-                    // 6. 添加原子核
+                    // 添加原子核
                     this.addNucleus();
                     
-                    // 7. 创建初始电子云（显示一些随机点以测试）
-                    this.createTestElectronCloud();
+                    // 创建初始电子云
+                    this.createElectronCloud(this.pointsCount);
                     
-                    // 8. 初始化控制器
-                    this.initControls();
-                    
-                    // 9. 处理窗口大小变化
+                    // 处理窗口大小变化
                     window.addEventListener('resize', () => this.onWindowResize());
                     
-                    // 10. 开始动画循环
+                    // 开始动画循环
                     this.animate();
                     
                     this.isInitialized = true;
                     console.log('Three.js可视化引擎初始化成功');
                     
+                    // 强制渲染一帧确保可见
+                    setTimeout(() => {
+                        this.renderer.render(this.scene, this.camera);
+                        console.log('强制渲染完成');
+                    }, 100);
+                    
                     return true;
                 } catch (error) {
                     console.error('初始化Three.js失败:', error);
-                    this.showWebGLError('Three.js初始化失败: ' + error.message);
                     return false;
                 }
             },
@@ -1625,107 +1589,117 @@
                 this.scene.add(ambientLight);
                 
                 // 平行光
-                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-                directionalLight.position.set(10, 10, 10);
-                this.scene.add(directionalLight);
+                this.directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                this.directionalLight.position.set(10, 10, 10);
+                this.scene.add(this.directionalLight);
                 
                 // 点光源（模拟原子核发光）
-                const pointLight = new THREE.PointLight(0xff4444, 1, 100);
-                pointLight.position.set(0, 0, 0);
-                this.scene.add(pointLight);
+                this.pointLight = new THREE.PointLight(0xff4444, 2, 100);
+                this.pointLight.position.set(0, 0, 0);
+                this.scene.add(this.pointLight);
+                
+                // 辅助光
+                const fillLight = new THREE.DirectionalLight(0x6666ff, 0.3);
+                fillLight.position.set(-10, -10, -10);
+                this.scene.add(fillLight);
             },
             
             // 添加坐标轴
             addAxes() {
                 // 创建坐标轴辅助器
-                const axesSize = 5;
+                const axesSize = 10;
                 this.axesHelper = new THREE.AxesHelper(axesSize);
                 this.scene.add(this.axesHelper);
+                
+                // 添加网格
+                const gridHelper = new THREE.GridHelper(30, 30, 0x444444, 0x222222);
+                gridHelper.position.y = -0.01;
+                this.scene.add(gridHelper);
             },
             
             // 添加原子核
             addNucleus() {
                 // 原子核几何体
-                const geometry = new THREE.SphereGeometry(0.3, 32, 32);
+                const geometry = new THREE.SphereGeometry(0.5, 32, 32);
                 
                 // 原子核材质
                 const material = new THREE.MeshPhongMaterial({
                     color: 0xff4444,
                     emissive: 0xff0000,
-                    emissiveIntensity: 0.3,
+                    emissiveIntensity: 0.5,
                     shininess: 100,
                     specular: 0xff6666
                 });
                 
                 this.nucleus = new THREE.Mesh(geometry, material);
                 this.scene.add(this.nucleus);
+                
+                // 添加原子核发光光晕
+                const glowGeometry = new THREE.SphereGeometry(0.7, 32, 32);
+                const glowMaterial = new THREE.MeshBasicMaterial({
+                    color: 0xff4444,
+                    transparent: true,
+                    opacity: 0.3
+                });
+                const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+                this.nucleus.add(glow);
             },
             
-            // 初始化控制器
-            initControls() {
-                if (typeof THREE.OrbitControls === 'undefined') {
-                    console.warn('OrbitControls未加载，使用简单控制');
-                    return;
+            // 创建电子云
+            createElectronCloud(pointCount) {
+                console.log(`创建电子云，点数: ${pointCount}`);
+                
+                // 移除现有的电子云
+                if (this.electronCloud) {
+                    this.scene.remove(this.electronCloud);
+                    if (this.electronCloud.geometry) {
+                        this.electronCloud.geometry.dispose();
+                    }
+                    if (this.electronCloud.material) {
+                        this.electronCloud.material.dispose();
+                    }
                 }
                 
-                try {
-                    this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
-                    this.controls.enableDamping = true;
-                    this.controls.dampingFactor = 0.05;
-                    this.controls.minDistance = 5;
-                    this.controls.maxDistance = 50;
-                    console.log('OrbitControls初始化成功');
-                } catch (error) {
-                    console.warn('OrbitControls初始化失败:', error);
-                }
-            },
-            
-            // 创建测试电子云
-            createTestElectronCloud() {
-                console.log('创建测试电子云...');
+                this.pointsCount = pointCount;
                 
                 // 创建点云几何体
                 const geometry = new THREE.BufferGeometry();
-                const pointsCount = 1000;
-                const positions = new Float32Array(pointsCount * 3);
-                const colors = new Float32Array(pointsCount * 3);
+                const positions = new Float32Array(pointCount * 3);
+                const colors = new Float32Array(pointCount * 3);
                 
-                // 填充随机位置和颜色
-                for (let i = 0; i < pointsCount; i++) {
+                // 初始填充随机位置和颜色
+                for (let i = 0; i < pointCount; i++) {
                     const i3 = i * 3;
+                    // 初始位置在原点附近
+                    positions[i3] = (Math.random() - 0.5) * 10;
+                    positions[i3 + 1] = (Math.random() - 0.5) * 10;
+                    positions[i3 + 2] = (Math.random() - 0.5) * 10;
                     
-                    // 随机球面分布
-                    const radius = 2 + Math.random() * 3;
-                    const theta = Math.random() * Math.PI * 2;
-                    const phi = Math.acos(2 * Math.random() - 1);
-                    
-                    positions[i3] = radius * Math.sin(phi) * Math.cos(theta);
-                    positions[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
-                    positions[i3 + 2] = radius * Math.cos(phi);
-                    
-                    // 蓝色渐变
-                    colors[i3] = 0.2 + Math.random() * 0.3; // R
-                    colors[i3 + 1] = 0.4 + Math.random() * 0.4; // G
-                    colors[i3 + 2] = 0.8 + Math.random() * 0.2; // B
+                    // 初始颜色（蓝色）
+                    colors[i3] = 0.4;
+                    colors[i3 + 1] = 0.6;
+                    colors[i3 + 2] = 1.0;
                 }
                 
                 geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
                 geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
                 
-                // 创建点云材质
+                // 创建点云材质 - 修复材质设置
                 const material = new THREE.PointsMaterial({
-                    size: 0.1,
+                    size: 0.15,
                     vertexColors: true,
                     transparent: true,
-                    opacity: 0.7,
-                    sizeAttenuation: true
+                    opacity: 0.8,
+                    blending: THREE.AdditiveBlending,
+                    sizeAttenuation: true,
+                    depthWrite: false
                 });
                 
                 // 创建点云对象
                 this.electronCloud = new THREE.Points(geometry, material);
                 this.scene.add(this.electronCloud);
                 
-                console.log('测试电子云创建完成');
+                console.log('电子云创建完成');
             },
             
             // 更新电子云数据
@@ -1743,29 +1717,62 @@
                 
                 const pointCount = Math.min(data.length, positions.length / 3);
                 
-                // 更新位置和颜色
+                // 找出数据的最大范围
+                let maxX = 0, maxY = 0, maxZ = 0;
+                for (let i = 0; i < pointCount; i++) {
+                    const point = data[i];
+                    maxX = Math.max(maxX, Math.abs(point.x));
+                    maxY = Math.max(maxY, Math.abs(point.y));
+                    maxZ = Math.max(maxZ, Math.abs(point.z));
+                }
+                
+                const maxRange = Math.max(maxX, maxY, maxZ);
+                const scale = maxRange > 0 ? 8 / maxRange : 1;
+                
+                console.log(`数据范围: x:${maxX.toFixed(2)}, y:${maxY.toFixed(2)}, z:${maxZ.toFixed(2)}, 缩放因子: ${scale.toFixed(2)}`);
+                
                 for (let i = 0; i < pointCount; i++) {
                     const point = data[i];
                     const i3 = i * 3;
                     
-                    // 更新位置
-                    positions[i3] = point.x;
-                    positions[i3 + 1] = point.y;
-                    positions[i3 + 2] = point.z;
+                    // 更新位置并应用缩放
+                    positions[i3] = point.x * scale;
+                    positions[i3 + 1] = point.y * scale;
+                    positions[i3 + 2] = point.z * scale;
                     
-                    // 更新颜色
+                    // 基于概率更新颜色
                     const probability = point.probability || 0;
-                    const intensity = Math.min(1, probability * 2);
+                    const intensity = Math.min(1, probability * 3);
                     
+                    // 使用数据中的颜色或根据量子态设置颜色
                     if (point.color) {
-                        colors[i3] = point.color[0] / 255 * intensity;
-                        colors[i3 + 1] = point.color[1] / 255 * intensity;
-                        colors[i3 + 2] = point.color[2] / 255 * intensity;
-                    } else {
-                        // 默认颜色
-                        colors[i3] = 0.2 * intensity;
-                        colors[i3 + 1] = 0.6 * intensity;
-                        colors[i3 + 2] = 1.0 * intensity;
+                        colors[i3] = point.color[0] / 255;
+                        colors[i3 + 1] = point.color[1] / 255;
+                        colors[i3 + 2] = point.color[2] / 255;
+                    } else if (state) {
+                        const l = state.l || 0;
+                        
+                        switch(l) {
+                            case 0: // s轨道 - 蓝色
+                                colors[i3] = 0.4 * intensity;
+                                colors[i3 + 1] = 0.6 * intensity;
+                                colors[i3 + 2] = 1.0 * intensity;
+                                break;
+                            case 1: // p轨道 - 绿色
+                                colors[i3] = 0.4 * intensity;
+                                colors[i3 + 1] = 1.0 * intensity;
+                                colors[i3 + 2] = 0.6 * intensity;
+                                break;
+                            case 2: // d轨道 - 紫色
+                                colors[i3] = 0.8 * intensity;
+                                colors[i3 + 1] = 0.4 * intensity;
+                                colors[i3 + 2] = 1.0 * intensity;
+                                break;
+                            default: // 其他 - 青色
+                                colors[i3] = 0.4 * intensity;
+                                colors[i3 + 1] = 1.0 * intensity;
+                                colors[i3 + 2] = 1.0 * intensity;
+                        }
                     }
                 }
                 
@@ -1776,7 +1783,15 @@
                 // 更新点数量
                 geometry.setDrawRange(0, pointCount);
                 
+                // 重新计算边界框
+                geometry.computeBoundingSphere();
+                
                 console.log(`电子云更新完成，显示${pointCount}个点`);
+                
+                // 强制立即渲染
+                if (this.renderer && this.scene && this.camera) {
+                    this.renderer.render(this.scene, this.camera);
+                }
             },
             
             // 设置量子态数据
@@ -1788,8 +1803,14 @@
                     console.log(`设置数据，状态: ${state ? state.label : '无状态'}, 数据点: ${data.length}`);
                     this.updateElectronCloud(data, state);
                     
-                    // 调整视图
+                    // 根据量子态调整视图
                     this.adjustViewForState(state);
+                    
+                    // 显示电子云
+                    if (this.electronCloud) {
+                        this.electronCloud.visible = true;
+                        console.log('电子云已显示');
+                    }
                 } else {
                     console.warn('setData: 无数据或数据为空');
                 }
@@ -1800,60 +1821,62 @@
                 if (!state) return;
                 
                 const n = state.n || 1;
-                const distance = 10 + (n - 1) * 3;
+                
+                // 根据主量子数调整相机距离
+                const baseDistance = 20;
+                const distance = baseDistance + (n - 1) * 5;
                 
                 this.camera.position.set(0, 0, distance);
                 this.camera.lookAt(0, 0, 0);
                 
-                if (this.controls) {
-                    this.controls.update();
-                }
-                
-                console.log(`调整视图: n=${n}, 相机距离=${distance}`);
+                console.log(`调整视图: n=${n}, 相机距离=${distance.toFixed(1)}`);
             },
             
-            // 动画循环
+            // 动画循环 - 修复版本
             animate() {
                 if (!this.isInitialized) return;
                 
                 // 请求下一帧
                 this.animationFrameId = requestAnimationFrame(() => this.animate());
                 
-                // 更新控制器
-                if (this.controls) {
-                    this.controls.update();
-                }
-                
                 // 旋转电子云（如果动画开启）
-                if (this.isAnimating && this.electronCloud) {
+                if (this.isAnimating && this.electronCloud && this.electronCloud.visible) {
                     this.electronCloud.rotation.y += 0.005;
                 }
                 
                 // 原子核脉动效果
                 if (this.nucleus) {
                     const time = Date.now() * 0.001;
-                    const scale = 1 + 0.05 * Math.sin(time * 3);
+                    const scale = 1 + 0.1 * Math.sin(time * 2);
                     this.nucleus.scale.set(scale, scale, scale);
                 }
                 
-                // 渲染场景
-                this.renderer.render(this.scene, this.camera);
+                // 渲染场景 - 确保每次都渲染
+                if (this.renderer && this.scene && this.camera) {
+                    this.renderer.render(this.scene, this.camera);
+                }
             },
             
-            // 窗口大小变化处理
+            // 窗口大小变化处理 - 修复版本
             onWindowResize() {
                 if (!this.camera || !this.renderer) return;
                 
                 const canvas = this.renderer.domElement;
-                const width = canvas.clientWidth;
-                const height = canvas.clientHeight;
+                const container = canvas.parentElement;
                 
-                // 更新相机
-                this.camera.aspect = width / height;
-                this.camera.updateProjectionMatrix();
-                
-                // 更新渲染器
-                this.renderer.setSize(width, height, false);
+                if (container) {
+                    const width = container.clientWidth;
+                    const height = container.clientHeight;
+                    
+                    // 更新相机
+                    this.camera.aspect = width / height;
+                    this.camera.updateProjectionMatrix();
+                    
+                    // 更新渲染器
+                    this.renderer.setSize(width, height, false);
+                    
+                    console.log(`窗口大小调整: ${width}x${height}`);
+                }
             },
             
             // 开始/停止动画
@@ -1864,15 +1887,13 @@
             
             // 重置视图
             resetView() {
-                this.camera.position.set(0, 0, 15);
+                // 重置相机位置
+                this.camera.position.set(0, 0, 25);
                 this.camera.lookAt(0, 0, 0);
                 
+                // 重置电子云旋转
                 if (this.electronCloud) {
                     this.electronCloud.rotation.set(0, 0, 0);
-                }
-                
-                if (this.controls) {
-                    this.controls.reset();
                 }
                 
                 console.log('视图已重置');
@@ -1884,15 +1905,15 @@
                 
                 switch(mode) {
                     case 'points':
-                        this.electronCloud.material.size = 0.1;
-                        this.electronCloud.material.opacity = 0.7;
+                        this.electronCloud.material.size = 0.15;
+                        this.electronCloud.material.opacity = 0.8;
                         break;
                     case 'density':
-                        this.electronCloud.material.size = 0.2;
-                        this.electronCloud.material.opacity = 0.5;
+                        this.electronCloud.material.size = 0.25;
+                        this.electronCloud.material.opacity = 0.6;
                         break;
                     case 'surface':
-                        this.electronCloud.material.size = 0.05;
+                        this.electronCloud.material.size = 0.1;
                         this.electronCloud.material.opacity = 0.9;
                         break;
                 }
@@ -1900,34 +1921,21 @@
                 this.electronCloud.material.needsUpdate = true;
             },
             
-            // 截图功能
+            // 截图功能 - 修复版本
             captureScreenshot() {
                 if (!this.renderer) return null;
                 
                 try {
-                    // 渲染当前帧
+                    // 确保渲染最新帧
                     this.renderer.render(this.scene, this.camera);
                     
                     // 获取数据URL
                     const dataURL = this.renderer.domElement.toDataURL('image/png');
                     return dataURL;
                 } catch (error) {
-                    console.error('截图失败:', error);
+                    console.error('Error capturing screenshot:', error);
                     return null;
                 }
-            },
-            
-            // 显示WebGL错误
-            showWebGLError(message) {
-                const errorDiv = document.getElementById('webglError');
-                if (errorDiv) {
-                    errorDiv.style.display = 'block';
-                    const errorMsg = errorDiv.querySelector('p');
-                    if (errorMsg && message) {
-                        errorMsg.textContent = message;
-                    }
-                }
-                console.error('WebGL错误:', message);
             },
             
             // 清理资源
@@ -1935,10 +1943,6 @@
                 if (this.animationFrameId) {
                     cancelAnimationFrame(this.animationFrameId);
                     this.animationFrameId = null;
-                }
-                
-                if (this.controls) {
-                    this.controls.dispose();
                 }
                 
                 if (this.renderer) {
@@ -1954,6 +1958,7 @@
         class HydrogenVisualizationApp {
             constructor() {
                 this.isInitialized = false;
+                this.is3DEnabled = true;
                 this.loadingElement = null;
                 this.currentQuantumState = null;
                 this.notifications = [];
@@ -1962,7 +1967,7 @@
             }
             
             init() {
-                console.log('初始化氢原子可视化应用...');
+                console.log('Initializing Hydrogen Visualization App...');
                 
                 this.loadingElement = document.getElementById('loadingText');
                 
@@ -1978,7 +1983,7 @@
                 // 更新UI
                 this.updateUI();
                 
-                console.log('应用初始化成功');
+                console.log('App initialized successfully');
             }
             
             // 检查WebGL支持
@@ -1987,52 +1992,48 @@
                     const canvas = document.createElement('canvas');
                     const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
                     if (!gl) {
-                        console.warn('WebGL不支持');
-                        document.getElementById('webglError').style.display = 'block';
+                        console.warn('WebGL not supported');
+                        this.is3DEnabled = false;
+                        this.showNotification('WebGL不支持，正在使用简化模式', 'warning');
                     } else {
-                        console.log('WebGL支持正常');
+                        console.log('WebGL is supported');
                     }
                 } catch (error) {
-                    console.warn('WebGL检查失败:', error);
-                    document.getElementById('webglError').style.display = 'block';
+                    console.warn('WebGL check failed:', error);
+                    this.is3DEnabled = false;
                 }
             }
             
             // 初始化可视化引擎
             initVisualization() {
-                if (this.loadingElement) {
-                    this.loadingElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>正在初始化可视化引擎...</span>';
-                    this.loadingElement.style.display = 'flex';
-                }
-                
                 // 延迟初始化，确保DOM完全加载
                 setTimeout(() => {
                     try {
-                        console.log('尝试初始化3D引擎...');
-                        const initSuccess = VisualizationEngine.init('electronCanvas');
-                        
-                        if (initSuccess) {
-                            console.log('3D可视化引擎初始化成功');
-                            this.isInitialized = true;
-                            this.showNotification('3D可视化引擎已就绪', 'success');
+                        if (this.is3DEnabled && typeof VisualizationEngine !== 'undefined') {
+                            console.log('Attempting to initialize 3D engine...');
+                            const initSuccess = VisualizationEngine.init('electronCanvas');
                             
-                            // 默认选择1s轨道
-                            setTimeout(() => {
-                                this.selectQuantumState('1,0,0');
-                            }, 1000);
+                            if (initSuccess) {
+                                console.log('3D visualization engine initialized');
+                                this.isInitialized = true;
+                                this.showNotification('3D可视化引擎已就绪', 'success');
+                                
+                                // 默认选择1s轨道
+                                setTimeout(() => {
+                                    this.selectQuantumState('1,0,0');
+                                }, 1000);
+                            } else {
+                                console.warn('3D engine failed');
+                                this.showNotification('3D引擎初始化失败', 'error');
+                            }
                         } else {
-                            console.warn('3D引擎初始化失败');
-                            this.showNotification('3D引擎初始化失败', 'error');
-                        }
-                        
-                        if (this.loadingElement) {
-                            this.loadingElement.style.display = 'none';
+                            console.log('3D not enabled or engine not available');
                         }
                     } catch (error) {
-                        console.error('初始化可视化错误:', error);
+                        console.error('Error initializing visualization:', error);
                         this.showError('初始化过程中发生错误: ' + error.message);
                     }
-                }, 1000);
+                }, 100);
             }
             
             // 设置事件监听器
@@ -2104,15 +2105,6 @@
                     rotateBtn.addEventListener('click', () => this.toggleRotation());
                 }
                 
-                // 重试按钮
-                const retryBtn = document.getElementById('retryBtn');
-                if (retryBtn) {
-                    retryBtn.addEventListener('click', () => {
-                        document.getElementById('webglError').style.display = 'none';
-                        this.initVisualization();
-                    });
-                }
-                
                 // 导航链接
                 document.querySelectorAll('.nav-link').forEach(link => {
                     link.addEventListener('click', (e) => this.onNavLinkClick(e));
@@ -2178,7 +2170,7 @@
                 const value = event.target.value;
                 if (!value) return;
                 
-                console.log('选择的量子态:', value);
+                console.log('Selected quantum state:', value);
                 
                 const [n, l, m] = value.split(',').map(Number);
                 
@@ -2221,13 +2213,13 @@
                 
                 this.showLoading('正在生成电子云数据...');
                 
-                // 使用requestAnimationFrame确保在下一帧执行
-                requestAnimationFrame(() => {
+                // 使用setTimeout确保UI更新
+                setTimeout(() => {
                     try {
                         const numPoints = parseInt(document.getElementById('pointDensity').value) || 3000;
                         const cutoff = parseFloat(document.getElementById('probabilityCutoff').value) || 0.05;
                         
-                        console.log(`生成电子云: n=${n}, l=${l}, m=${m}, 点数=${numPoints}`);
+                        console.log(`Generating electron cloud: n=${n}, l=${l}, m=${m}, points=${numPoints}`);
                         
                         // 生成电子云数据
                         const electronData = this.generateElectronCloudData(n, l, m, numPoints);
@@ -2239,10 +2231,12 @@
                         // 应用概率阈值过滤
                         const filteredData = electronData.filter(point => point.probability >= cutoff);
                         
-                        console.log(`生成${electronData.length}个点，过滤后${filteredData.length}个点`);
+                        console.log(`Generated ${electronData.length} points, filtered to ${filteredData.length} points`);
                         
                         // 更新可视化
-                        VisualizationEngine.setData(filteredData, this.currentQuantumState);
+                        if (this.is3DEnabled && VisualizationEngine && VisualizationEngine.setData) {
+                            VisualizationEngine.setData(filteredData, this.currentQuantumState);
+                        }
                         
                         this.hideLoading();
                         
@@ -2253,102 +2247,105 @@
                         );
                         
                     } catch (error) {
-                        console.error('生成电子云错误:', error);
+                        console.error('Error generating electron cloud:', error);
                         this.showError('生成电子云数据失败: ' + error.message);
+                        this.hideLoading();
                     }
-                });
+                }, 50);
             }
             
-            // 生成电子云数据（改进版）
+            // 生成电子云数据
             generateElectronCloudData(n, l, m, numPoints) {
                 const data = [];
-                const maxRadius = n * n * 2; // 半径随n²增加
+                const maxRadius = n * 3;
                 
-                // 波函数简化模型
-                const radialWaveFunction = (r) => {
-                    // 简化径向波函数：R_nl(r) ∝ r^l * exp(-r/(n*a0))
-                    const a0 = 1; // 玻尔半径（单位化）
-                    return Math.pow(r, l) * Math.exp(-r / (n * a0));
-                };
-                
-                const angularWaveFunction = (theta, phi) => {
-                    // 简化角向波函数：Y_lm(θ,φ)
-                    if (l === 0) return 1; // s轨道
+                // 轨道颜色
+                const getOrbitalColor = (l, probability, x, y, z) => {
+                    const orbitalColors = [
+                        [100, 150, 255], // s轨道 - 蓝色
+                        [100, 255, 150], // p轨道 - 绿色
+                        [200, 100, 255], // d轨道 - 紫色
+                        [255, 200, 100]  // f轨道 - 橙色
+                    ];
                     
-                    if (l === 1) { // p轨道
-                        switch(m) {
-                            case 0: return Math.cos(theta); // pz
-                            case 1: return Math.sin(theta) * Math.cos(phi); // px
-                            case -1: return Math.sin(theta) * Math.sin(phi); // py
-                        }
-                    }
+                    const baseColor = orbitalColors[l] || orbitalColors[0];
+                    const intensity = 0.5 + probability * 0.5;
                     
-                    if (l === 2) { // d轨道
-                        switch(m) {
-                            case 0: return 3 * Math.cos(theta) * Math.cos(theta) - 1; // dz²
-                            case 1: return Math.sin(theta) * Math.cos(theta) * Math.cos(phi); // dxz
-                            case -1: return Math.sin(theta) * Math.cos(theta) * Math.sin(phi); // dyz
-                            case 2: return Math.sin(theta) * Math.sin(theta) * Math.cos(2 * phi); // dx²-y²
-                            case -2: return Math.sin(theta) * Math.sin(theta) * Math.sin(2 * phi); // dxy
-                        }
-                    }
-                    
-                    return 1;
+                    return [
+                        Math.min(255, Math.floor(baseColor[0] * intensity)),
+                        Math.min(255, Math.floor(baseColor[1] * intensity)),
+                        Math.min(255, Math.floor(baseColor[2] * intensity))
+                    ];
                 };
                 
                 // 生成点
                 for (let i = 0; i < numPoints; i++) {
-                    // 球坐标
-                    const r = Math.random() * maxRadius;
-                    const theta = Math.acos(2 * Math.random() - 1); // 0到π
-                    const phi = Math.random() * 2 * Math.PI; // 0到2π
+                    let x, y, z, probability;
                     
-                    // 计算波函数值
-                    const radial = radialWaveFunction(r);
-                    const angular = angularWaveFunction(theta, phi);
-                    const psi = radial * angular;
-                    
-                    // 概率密度 = |ψ|²
-                    let probability = psi * psi;
-                    
-                    // 归一化
-                    probability = Math.min(1, probability * 10);
-                    
-                    // 转换为直角坐标
-                    const x = r * Math.sin(theta) * Math.cos(phi);
-                    const y = r * Math.sin(theta) * Math.sin(phi);
-                    const z = r * Math.cos(theta);
-                    
-                    // 轨道颜色
-                    let color;
-                    switch(l) {
-                        case 0: // s轨道 - 蓝色
-                            color = [100, 150, 255];
-                            break;
-                        case 1: // p轨道 - 绿色
-                            color = [100, 255, 150];
-                            break;
-                        case 2: // d轨道 - 紫色
-                            color = [200, 100, 255];
-                            break;
-                        default:
-                            color = [255, 200, 100];
+                    // 根据轨道类型生成不同分布
+                    if (l === 0) { // s轨道 - 球形
+                        const phi = Math.random() * Math.PI * 2;
+                        const theta = Math.acos(2 * Math.random() - 1);
+                        const r = Math.random() * maxRadius;
+                        
+                        x = r * Math.sin(theta) * Math.cos(phi);
+                        y = r * Math.sin(theta) * Math.sin(phi);
+                        z = r * Math.cos(theta);
+                        
+                        probability = Math.exp(-r / n);
+                    } 
+                    else if (l === 1) { // p轨道
+                        const phi = Math.random() * Math.PI * 2;
+                        const theta = Math.acos(2 * Math.random() - 1);
+                        const r = Math.random() * maxRadius;
+                        
+                        x = r * Math.sin(theta) * Math.cos(phi);
+                        y = r * Math.sin(theta) * Math.sin(phi);
+                        z = r * Math.cos(theta);
+                        
+                        // p轨道的概率分布
+                        if (m === 0) { // pz
+                            probability = Math.exp(-r / n) * Math.abs(Math.cos(theta));
+                            // 增强z轴方向
+                            z *= 1.5;
+                        } else if (m === 1) { // px
+                            probability = Math.exp(-r / n) * Math.abs(Math.sin(theta) * Math.cos(phi));
+                            // 增强x轴方向
+                            x *= 1.5;
+                        } else if (m === -1) { // py
+                            probability = Math.exp(-r / n) * Math.abs(Math.sin(theta) * Math.sin(phi));
+                            // 增强y轴方向
+                            y *= 1.5;
+                        } else {
+                            probability = Math.exp(-r / n);
+                        }
+                    }
+                    else { // d轨道及其他
+                        const phi = Math.random() * Math.PI * 2;
+                        const theta = Math.acos(2 * Math.random() - 1);
+                        const r = Math.random() * maxRadius;
+                        
+                        x = r * Math.sin(theta) * Math.cos(phi);
+                        y = r * Math.sin(theta) * Math.sin(phi);
+                        z = r * Math.cos(theta);
+                        
+                        probability = Math.exp(-r / n) * Math.pow(Math.sin(theta), 2);
+                        
+                        // d轨道的特殊形状
+                        if (m === 0) { // dz²
+                            probability *= Math.abs(3 * Math.cos(theta) * Math.cos(theta) - 1);
+                        }
                     }
                     
-                    // 颜色强度随概率变化
-                    const intensity = 0.5 + probability * 0.5;
-                    const finalColor = [
-                        Math.min(255, Math.floor(color[0] * intensity)),
-                        Math.min(255, Math.floor(color[1] * intensity)),
-                        Math.min(255, Math.floor(color[2] * intensity))
-                    ];
+                    // 归一化概率
+                    probability = Math.min(1, probability * 2);
                     
                     data.push({
                         x: x,
                         y: y,
                         z: z,
                         probability: probability,
-                        color: finalColor
+                        color: getOrbitalColor(l, probability, x, y, z)
                     });
                 }
                 
@@ -2368,7 +2365,9 @@
                 
                 this.visualizationMode = mode;
                 
-                VisualizationEngine.setVisualizationMode(mode);
+                if (this.is3DEnabled && VisualizationEngine && VisualizationEngine.setVisualizationMode) {
+                    VisualizationEngine.setVisualizationMode(mode);
+                }
                 
                 this.showNotification(`已切换到${this.getModeName(mode)}模式`, 'info');
             }
@@ -2428,7 +2427,11 @@
                 }
                 
                 try {
-                    const isAnimating = VisualizationEngine.toggleAnimation();
+                    let isAnimating = false;
+                    
+                    if (this.is3DEnabled && VisualizationEngine && VisualizationEngine.toggleAnimation) {
+                        isAnimating = VisualizationEngine.toggleAnimation();
+                    }
                     
                     const button = document.getElementById('animateBtn');
                     if (button) {
@@ -2441,7 +2444,7 @@
                         }
                     }
                 } catch (error) {
-                    console.error('切换动画错误:', error);
+                    console.error('Error toggling animation:', error);
                     this.showError('控制动画失败');
                 }
             }
@@ -2454,7 +2457,11 @@
                 }
                 
                 try {
-                    const screenshotUrl = VisualizationEngine.captureScreenshot();
+                    let screenshotUrl = null;
+                    
+                    if (this.is3DEnabled && VisualizationEngine && VisualizationEngine.captureScreenshot) {
+                        screenshotUrl = VisualizationEngine.captureScreenshot();
+                    }
                     
                     if (screenshotUrl) {
                         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -2471,7 +2478,7 @@
                         throw new Error('无法生成截图');
                     }
                 } catch (error) {
-                    console.error('截图错误:', error);
+                    console.error('Error capturing screenshot:', error);
                     this.showError('截图失败: ' + error.message);
                 }
             }
@@ -2501,10 +2508,10 @@
                             timestamp: new Date().toISOString()
                         },
                         data: electronData.map(point => ({
-                            x: point.x.toFixed(4),
-                            y: point.y.toFixed(4),
-                            z: point.z.toFixed(4),
-                            probability: point.probability.toFixed(6),
+                            x: point.x,
+                            y: point.y,
+                            z: point.z,
+                            probability: point.probability,
                             color: point.color
                         }))
                     };
@@ -2526,7 +2533,7 @@
                     this.showNotification('数据已导出为 ' + filename, 'success');
                     
                 } catch (error) {
-                    console.error('导出数据错误:', error);
+                    console.error('Error exporting data:', error);
                     this.showError('导出数据失败: ' + error.message);
                 }
             }
@@ -2539,17 +2546,20 @@
                 }
                 
                 try {
-                    VisualizationEngine.resetView();
+                    if (this.is3DEnabled && VisualizationEngine && VisualizationEngine.resetView) {
+                        VisualizationEngine.resetView();
+                    }
+                    
                     this.showNotification('视图已重置', 'info');
                 } catch (error) {
-                    console.error('重置视图错误:', error);
+                    console.error('Error resetting view:', error);
                     this.showError('重置视图失败');
                 }
             }
             
             // 放大
             zoomIn() {
-                if (VisualizationEngine.camera) {
+                if (this.is3DEnabled && VisualizationEngine && VisualizationEngine.camera) {
                     VisualizationEngine.camera.position.multiplyScalar(0.9);
                     this.showNotification('已放大', 'info');
                 }
@@ -2557,7 +2567,7 @@
             
             // 缩小
             zoomOut() {
-                if (VisualizationEngine.camera) {
+                if (this.is3DEnabled && VisualizationEngine && VisualizationEngine.camera) {
                     VisualizationEngine.camera.position.multiplyScalar(1.1);
                     this.showNotification('已缩小', 'info');
                 }
@@ -2565,14 +2575,16 @@
             
             // 切换旋转
             toggleRotation() {
-                VisualizationEngine.isAnimating = !VisualizationEngine.isAnimating;
-                const button = document.getElementById('rotateBtn');
-                if (button) {
-                    button.classList.toggle('active');
-                    this.showNotification(
-                        VisualizationEngine.isAnimating ? '旋转已启用' : '旋转已禁用',
-                        'info'
-                    );
+                if (this.is3DEnabled && VisualizationEngine && VisualizationEngine.isAnimating !== undefined) {
+                    VisualizationEngine.isAnimating = !VisualizationEngine.isAnimating;
+                    const button = document.getElementById('rotateBtn');
+                    if (button) {
+                        button.classList.toggle('active');
+                        this.showNotification(
+                            VisualizationEngine.isAnimating ? '旋转已启用' : '旋转已禁用',
+                            'info'
+                        );
+                    }
                 }
             }
             
@@ -2599,7 +2611,7 @@
             
             // 窗口大小改变事件
             onWindowResize() {
-                if (this.isInitialized && VisualizationEngine.onWindowResize) {
+                if (this.is3DEnabled && this.isInitialized && VisualizationEngine && VisualizationEngine.onWindowResize) {
                     VisualizationEngine.onWindowResize();
                 }
             }
@@ -2650,10 +2662,6 @@
             showError(message) {
                 console.error(message);
                 this.showNotification(message, 'error');
-                
-                if (this.loadingElement) {
-                    this.loadingElement.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <span>${message}</span>`;
-                }
             }
             
             // 显示通知
@@ -2703,7 +2711,7 @@
             
             // 清理资源
             dispose() {
-                if (VisualizationEngine.dispose) {
+                if (this.is3DEnabled && VisualizationEngine && VisualizationEngine.dispose) {
                     VisualizationEngine.dispose();
                 }
                 
@@ -2714,7 +2722,7 @@
                 });
                 this.notifications = [];
                 
-                console.log('应用清理完成');
+                console.log('App disposed');
             }
         }
 
@@ -2722,22 +2730,20 @@
         let app;
 
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM加载完成，启动应用...');
+            console.log('DOM Content Loaded, starting app...');
             
             try {
                 app = new HydrogenVisualizationApp();
                 app.init();
             } catch (error) {
-                console.error('应用初始化失败:', error);
-                const errorDiv = document.createElement('div');
-                errorDiv.style.cssText = 'color:white;padding:40px;text-align:center;background:var(--danger-color);margin:20px;border-radius:10px;';
-                errorDiv.innerHTML = `
-                    <h2>应用程序初始化失败</h2>
-                    <p>${error.message}</p>
-                    <p>请检查浏览器控制台获取详细信息</p>
-                    <button onclick="location.reload()" style="margin-top:20px;padding:10px 20px;background:white;color:var(--danger-color);border:none;border-radius:5px;cursor:pointer;">重新加载</button>
+                console.error('Failed to initialize app:', error);
+                document.body.innerHTML = `
+                    <div style="color:white;padding:40px;text-align:center;">
+                        <h2>应用程序初始化失败</h2>
+                        <p>${error.message}</p>
+                        <p>请检查控制台获取详细信息</p>
+                    </div>
                 `;
-                document.body.appendChild(errorDiv);
             }
         });
 
@@ -2751,7 +2757,6 @@
         // 导出到全局作用域
         window.HydrogenVisualizationApp = HydrogenVisualizationApp;
         window.app = app;
-        // JavaScript代码结束
     </script>
 </body>
 </html>
