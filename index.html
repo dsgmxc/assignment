@@ -4,13 +4,1207 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>氢原子电子云可视化 - 量子力学仿真</title>
+    
     <!-- 引入Three.js库 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
+    
     <!-- 引入Font Awesome图标 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- 引入自定义CSS -->
-    <link rel="stylesheet" href="css/style.css">
+    
+    <style>
+        /* CSS样式开始 */
+        :root {
+            --primary-color: #3b82f6;
+            --primary-dark: #2563eb;
+            --secondary-color: #8b5cf6;
+            --accent-color: #06b6d4;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            
+            --background-dark: #0f172a;
+            --background-light: #1e293b;
+            --background-lighter: #334155;
+            
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            
+            --border-color: rgba(255, 255, 255, 0.1);
+            --border-radius: 12px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            font-size: 16px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+                'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+                sans-serif, 'Microsoft YaHei', '微软雅黑';
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background-color: var(--background-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--background-light);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 5px;
+            transition: var(--transition);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-dark);
+        }
+
+        /* 导航栏 */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background-color: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 1rem 0;
+            z-index: 1000;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .nav-logo:hover {
+            color: var(--primary-color);
+        }
+
+        .nav-logo i {
+            color: var(--primary-color);
+            font-size: 1.8rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 1.1rem;
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: var(--primary-color);
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 2px;
+            background: var(--primary-color);
+            border-radius: 1px;
+            transition: var(--transition);
+        }
+
+        .nav-link:hover::after, .nav-link.active::after {
+            width: 80%;
+        }
+
+        /* 主内容区 */
+        .main-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 6rem 2rem 2rem;
+            min-height: 100vh;
+        }
+
+        /* 英雄区域 */
+        .hero-section {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6rem;
+            padding: 4rem 0;
+            gap: 4rem;
+        }
+
+        .hero-content {
+            flex: 1;
+            min-width: 300px;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .hero-visual {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 1s ease-out;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            font-weight: 400;
+        }
+
+        .description {
+            font-size: 1.2rem;
+            margin-bottom: 3rem;
+            color: var(--text-primary);
+            max-width: 600px;
+            opacity: 0.9;
+        }
+
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 1.2rem 2.5rem;
+            border-radius: var(--border-radius);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: var(--transition);
+            border: none;
+            cursor: pointer;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.5s;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .cta-button:hover::before {
+            left: 100%;
+        }
+
+        /* 原子预览动画 */
+        .atom-preview {
+            position: relative;
+            width: 350px;
+            height: 350px;
+            perspective: 1000px;
+        }
+
+        .nucleus {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            background: radial-gradient(circle at 30% 30%, #ff6b6b, #ef4444);
+            border-radius: 50%;
+            box-shadow: 0 0 40px var(--danger-color), 0 0 80px rgba(239, 68, 68, 0.5);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
+        }
+
+        .electron-orbit {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 50%;
+        }
+
+        .orbit-1 {
+            width: 180px;
+            height: 180px;
+            margin-top: -90px;
+            margin-left: -90px;
+            animation: rotate 20s linear infinite;
+        }
+
+        .orbit-2 {
+            width: 240px;
+            height: 240px;
+            margin-top: -120px;
+            margin-left: -120px;
+            animation: rotate 15s linear infinite reverse;
+        }
+
+        .orbit-3 {
+            width: 300px;
+            height: 300px;
+            margin-top: -150px;
+            margin-left: -150px;
+            animation: rotate 25s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .electron {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: radial-gradient(circle at 30% 30%, #60a5fa, #3b82f6);
+            border-radius: 50%;
+            box-shadow: 0 0 20px var(--primary-color);
+            animation-timing-function: linear;
+            animation-iteration-count: infinite;
+        }
+
+        .electron-1 {
+            animation: orbit1 4s linear infinite;
+        }
+
+        .electron-2 {
+            animation: orbit2 6s linear infinite;
+        }
+
+        .electron-3 {
+            animation: orbit3 8s linear infinite;
+        }
+
+        /* 分区标题 */
+        .section-title {
+            font-size: 2.8rem;
+            margin-bottom: 3rem;
+            text-align: center;
+            color: var(--text-primary);
+            position: relative;
+            padding-bottom: 1.5rem;
+        }
+
+        .section-title::after {
+            content: '';
+            display: block;
+            width: 120px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+            margin: 0.5rem auto;
+            border-radius: 2px;
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        /* 可视化区域 */
+        .visualization-section {
+            margin-bottom: 6rem;
+        }
+
+        .visualization-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+
+        .canvas-container {
+            flex: 3;
+            min-width: 300px;
+            min-height: 600px;
+            height: 600px;
+            background-color: var(--background-light);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            position: relative;
+            box-shadow: var(--shadow-xl);
+            border: 1px solid var(--border-color);
+        }
+
+        #electronCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            outline: none;
+        }
+
+        .canvas-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(15, 23, 42, 0.95);
+            padding: 2rem 3rem;
+            border-radius: var(--border-radius);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            pointer-events: none;
+            z-index: 10;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .loading-overlay i {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+        }
+
+        .loading-overlay span {
+            font-size: 1.2rem;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .canvas-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: auto;
+            z-index: 5;
+        }
+
+        .control-btn {
+            width: 50px;
+            height: 50px;
+            background-color: rgba(30, 41, 59, 0.9);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            color: var(--text-primary);
+            font-size: 1.3rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+            position: relative;
+        }
+
+        .control-btn:hover {
+            background-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .control-btn.active {
+            background-color: var(--primary-color);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+        }
+
+        .control-btn[title]:hover::after {
+            content: attr(title);
+            position: absolute;
+            bottom: 100%;
+            right: 0;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            white-space: nowrap;
+            margin-bottom: 10px;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        /* 控制面板 */
+        .control-panel {
+            flex: 1;
+            min-width: 350px;
+            background-color: var(--background-light);
+            border-radius: var(--border-radius);
+            padding: 2.5rem;
+            box-shadow: var(--shadow-xl);
+            border: 1px solid var(--border-color);
+            height: fit-content;
+        }
+
+        .control-group {
+            margin-bottom: 2.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .control-group:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .control-group h3 {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        .control-group h3 i {
+            color: var(--primary-color);
+            font-size: 1.3rem;
+        }
+
+        /* 量子态选择器 */
+        .state-select {
+            width: 100%;
+            padding: 1.2rem;
+            background-color: rgba(15, 23, 42, 0.7);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: var(--transition);
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1em;
+        }
+
+        .state-select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        .state-select option {
+            background-color: var(--background-light);
+            color: var(--text-primary);
+            padding: 1rem;
+        }
+
+        .state-select optgroup {
+            background-color: var(--background-dark);
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        /* 量子数显示 */
+        .quantum-numbers-display {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+
+        .quantum-number {
+            background-color: rgba(15, 23, 42, 0.7);
+            border-radius: var(--border-radius);
+            padding: 1.5rem 1rem;
+            text-align: center;
+            transition: var(--transition);
+            border: 1px solid transparent;
+        }
+
+        .quantum-number:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary-color);
+            background-color: rgba(15, 23, 42, 0.9);
+        }
+
+        .quantum-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .quantum-value {
+            font-size: 2.8rem;
+            font-weight: 800;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+            line-height: 1;
+        }
+
+        .quantum-description {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            opacity: 0.8;
+        }
+
+        /* 参数控制 */
+        .parameter-control {
+            margin-bottom: 1.8rem;
+        }
+
+        .parameter-control:last-child {
+            margin-bottom: 0;
+        }
+
+        .parameter-control label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.8rem;
+            color: var(--text-primary);
+            font-weight: 500;
+            font-size: 1.1rem;
+        }
+
+        .value-display {
+            color: var(--primary-color);
+            font-weight: 600;
+            font-size: 1.1rem;
+            min-width: 60px;
+            text-align: right;
+        }
+
+        /* 范围滑块 */
+        input[type="range"] {
+            width: 100%;
+            height: 10px;
+            background-color: rgba(15, 23, 42, 0.7);
+            border-radius: 5px;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            background-color: var(--primary-color);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: var(--shadow-md);
+            border: 2px solid var(--background-light);
+            transition: var(--transition);
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background-color: var(--primary-dark);
+            transform: scale(1.1);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 22px;
+            height: 22px;
+            background-color: var(--primary-color);
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: var(--shadow-md);
+        }
+
+        /* 模式选择器 */
+        .mode-selector {
+            display: flex;
+            gap: 10px;
+            margin-top: 0.8rem;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 1rem 0.5rem;
+            background-color: rgba(15, 23, 42, 0.7);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: center;
+            font-weight: 500;
+            font-size: 1rem;
+        }
+
+        .mode-btn.active, .mode-btn:hover {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+        }
+
+        /* 控制按钮 */
+        .control-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+            margin-top: 2.5rem;
+        }
+
+        .btn-primary, .btn-secondary {
+            padding: 1.2rem;
+            border-radius: var(--border-radius);
+            border: none;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-secondary {
+            background-color: rgba(15, 23, 42, 0.7);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .btn-secondary:hover {
+            background-color: rgba(30, 41, 59, 0.9);
+            transform: translateY(-3px);
+            border-color: var(--primary-color);
+        }
+
+        /* 理论背景部分 */
+        .theory-section {
+            margin-bottom: 6rem;
+        }
+
+        .theory-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2.5rem;
+        }
+
+        .theory-card {
+            background-color: var(--background-light);
+            border-radius: var(--border-radius);
+            padding: 2.5rem;
+            transition: var(--transition);
+            border: 1px solid transparent;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .theory-card:hover {
+            transform: translateY(-10px);
+            box-shadow: var(--shadow-xl);
+            border-color: var(--primary-color);
+        }
+
+        .theory-icon {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .theory-card h3 {
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .theory-card p, .theory-card li {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            line-height: 1.7;
+        }
+
+        .theory-card ul {
+            padding-left: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .theory-card li {
+            margin-bottom: 0.8rem;
+            position: relative;
+            padding-left: 0.5rem;
+        }
+
+        .theory-card li::before {
+            content: '•';
+            color: var(--primary-color);
+            font-weight: bold;
+            position: absolute;
+            left: -1rem;
+        }
+
+        /* 关于部分 */
+        .about-section {
+            margin-bottom: 6rem;
+        }
+
+        .about-content {
+            background-color: var(--background-light);
+            border-radius: var(--border-radius);
+            padding: 4rem;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .about-content p {
+            max-width: 800px;
+            margin: 0 auto 3rem;
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            line-height: 1.8;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 3rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .feature {
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .feature i {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .feature h4 {
+            margin-bottom: 0.8rem;
+            color: var(--text-primary);
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .feature p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            margin: 0;
+        }
+
+        /* 页脚 */
+        .footer {
+            background-color: var(--background-light);
+            padding: 3rem 2rem;
+            margin-top: 4rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 3rem;
+        }
+
+        .footer-info h3 {
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .footer-info p {
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-info p:last-child {
+            margin-bottom: 0;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 2.5rem;
+        }
+
+        .footer-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: var(--transition);
+            font-weight: 500;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary-color);
+        }
+
+        /* 动画效果 */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .visualization-container {
+                flex-direction: column;
+            }
+            
+            .canvas-container, .control-panel {
+                width: 100%;
+                min-width: unset;
+            }
+            
+            .canvas-container {
+                height: 500px;
+                min-height: 500px;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .hero-section {
+                flex-direction: column;
+                text-align: center;
+                padding: 2rem 0;
+                gap: 3rem;
+            }
+            
+            .hero-content {
+                padding-right: 0;
+            }
+            
+            h1 {
+                font-size: 2.8rem;
+            }
+            
+            .subtitle {
+                font-size: 1.3rem;
+            }
+            
+            .section-title {
+                font-size: 2.4rem;
+            }
+            
+            .theory-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-direction: column;
+                gap: 1.5rem;
+                padding: 1rem;
+            }
+            
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 1rem;
+            }
+            
+            .main-content {
+                padding: 8rem 1rem 2rem;
+            }
+            
+            .quantum-numbers-display {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .control-panel {
+                padding: 2rem;
+            }
+            
+            .about-content {
+                padding: 2.5rem;
+            }
+            
+            .features {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            
+            .footer-content {
+                flex-direction: column;
+                text-align: center;
+                gap: 2rem;
+            }
+            
+            .footer-links {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 576px) {
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .subtitle {
+                font-size: 1.1rem;
+            }
+            
+            .section-title {
+                font-size: 2rem;
+            }
+            
+            .canvas-container {
+                height: 400px;
+                min-height: 400px;
+            }
+            
+            .control-buttons {
+                flex-direction: column;
+            }
+            
+            .theory-card {
+                padding: 2rem;
+            }
+            
+            .atom-preview {
+                width: 280px;
+                height: 280px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .nav-links {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .hero-section {
+                padding: 1rem 0;
+            }
+            
+            .control-panel {
+                padding: 1.5rem;
+            }
+            
+            .mode-selector {
+                flex-direction: column;
+            }
+        }
+
+        /* 打印样式 */
+        @media print {
+            .navbar,
+            .canvas-controls,
+            .control-panel,
+            .footer {
+                display: none !important;
+            }
+            
+            body {
+                background-color: white;
+                color: black;
+            }
+            
+            .main-content {
+                padding-top: 2rem;
+            }
+        }
+
+        /* 通知样式 */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            min-width: 300px;
+            max-width: 400px;
+            z-index: 10000;
+            animation: slideIn 0.3s ease;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .notification-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+        
+        .notification-content i {
+            font-size: 1.2rem;
+        }
+        
+        .notification-info {
+            background-color: rgba(59, 130, 246, 0.9);
+        }
+        
+        .notification-success {
+            background-color: rgba(16, 185, 129, 0.9);
+        }
+        
+        .notification-warning {
+            background-color: rgba(245, 158, 11, 0.9);
+        }
+        
+        .notification-error {
+            background-color: rgba(239, 68, 68, 0.9);
+        }
+        
+        .notification-close {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 1rem;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+            padding: 5px;
+            border-radius: 4px;
+        }
+        
+        .notification-close:hover {
+            opacity: 1;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        /* CSS样式结束 */
+    </style>
 </head>
 <body>
     <!-- 导航栏 -->
@@ -119,7 +1313,7 @@
                             </div>
                             <div class="quantum-number">
                                 <div class="quantum-label">角量子数 (l)</div>
-                                <div class="quantum-value" id="lValue">0 (s)</div>
+                                <div class="quantum-value" id="lValue">0</div>
                                 <div class="quantum-description">轨道形状</div>
                             </div>
                             <div class="quantum-number">
@@ -262,9 +1456,1294 @@
         </div>
     </footer>
 
-    <!-- JavaScript文件 -->
-    <script src="js/quantumStates.js"></script>
-    <script src="js/visualization.js"></script>
-    <script src="js/main.js"></script>
+    <script>
+        // JavaScript代码开始
+        // 量子态数据
+        const QuantumStates = {
+            states: [
+                { n: 1, l: 0, m: 0, label: "1s", name: "1s轨道", description: "基态，球形对称" },
+                { n: 2, l: 0, m: 0, label: "2s", name: "2s轨道", description: "第一激发态，球形对称" },
+                { n: 2, l: 1, m: 0, label: "2pz", name: "2pz轨道", description: "哑铃形，沿z轴" },
+                { n: 2, l: 1, m: 1, label: "2px", name: "2px轨道", description: "哑铃形，沿x轴" },
+                { n: 2, l: 1, m: -1, label: "2py", name: "2py轨道", description: "哑铃形，沿y轴" },
+                { n: 3, l: 0, m: 0, label: "3s", name: "3s轨道", description: "球形对称，有径向节面" },
+                { n: 3, l: 1, m: 0, label: "3pz", name: "3pz轨道", description: "哑铃形，有径向节面" },
+                { n: 3, l: 2, m: 0, label: "3dz²", name: "3dz²轨道", description: "花瓣形，沿z轴" },
+            ],
+            
+            getState(n, l, m) {
+                return this.states.find(state => 
+                    state.n === n && state.l === l && state.m === m
+                ) || null;
+            }
+        };
+
+        // 3D可视化引擎
+        const VisualizationEngine = {
+            scene: null,
+            camera: null,
+            renderer: null,
+            controls: null,
+            electronCloud: null,
+            nucleus: null,
+            axesHelper: null,
+            directionalLight: null,
+            pointLight: null,
+            
+            isInitialized: false,
+            isAnimating: true,
+            animationFrameId: null,
+            currentData: null,
+            currentState: null,
+            pointsCount: 3000,
+            
+            // 初始化Three.js场景
+            init(canvasId) {
+                try {
+                    console.log('开始初始化Three.js可视化引擎...');
+                    
+                    if (typeof THREE === 'undefined') {
+                        console.error('Three.js is not loaded');
+                        return false;
+                    }
+                    
+                    const canvas = document.getElementById(canvasId);
+                    if (!canvas) {
+                        console.error(`Canvas element with id "${canvasId}" not found.`);
+                        return false;
+                    }
+                    
+                    console.log('Canvas found, creating Three.js scene...');
+                    
+                    // 创建Three.js场景
+                    this.scene = new THREE.Scene();
+                    this.scene.background = new THREE.Color(0x0f172a);
+                    this.scene.fog = new THREE.Fog(0x0f172a, 10, 50);
+                    
+                    // 创建相机
+                    const width = canvas.clientWidth;
+                    const height = canvas.clientHeight;
+                    
+                    this.camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
+                    this.camera.position.set(0, 0, 25);
+                    this.camera.lookAt(0, 0, 0);
+                    
+                    // 创建渲染器
+                    this.renderer = new THREE.WebGLRenderer({ 
+                        canvas: canvas,
+                        antialias: true,
+                        alpha: false,
+                        powerPreference: "high-performance"
+                    });
+                    this.renderer.setSize(width, height, false);
+                    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                    this.renderer.shadowMap.enabled = false;
+                    
+                    console.log('Renderer created');
+                    
+                    // 添加光源
+                    this.addLights();
+                    
+                    // 添加坐标轴
+                    this.addAxes();
+                    
+                    // 添加原子核
+                    this.addNucleus();
+                    
+                    // 创建初始电子云
+                    this.createElectronCloud(this.pointsCount);
+                    
+                    // 处理窗口大小变化
+                    window.addEventListener('resize', () => this.onWindowResize());
+                    
+                    // 开始动画循环
+                    this.animate();
+                    
+                    this.isInitialized = true;
+                    console.log('Three.js可视化引擎初始化成功');
+                    
+                    return true;
+                } catch (error) {
+                    console.error('初始化Three.js失败:', error);
+                    return false;
+                }
+            },
+            
+            // 添加光源
+            addLights() {
+                // 环境光
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+                this.scene.add(ambientLight);
+                
+                // 平行光
+                this.directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                this.directionalLight.position.set(10, 10, 10);
+                this.directionalLight.castShadow = true;
+                this.scene.add(this.directionalLight);
+                
+                // 点光源（模拟原子核发光）
+                this.pointLight = new THREE.PointLight(0xff4444, 2, 100);
+                this.pointLight.position.set(0, 0, 0);
+                this.scene.add(this.pointLight);
+                
+                // 辅助光
+                const fillLight = new THREE.DirectionalLight(0x6666ff, 0.3);
+                fillLight.position.set(-10, -10, -10);
+                this.scene.add(fillLight);
+            },
+            
+            // 添加坐标轴
+            addAxes() {
+                // 创建坐标轴辅助器
+                const axesSize = 10;
+                this.axesHelper = new THREE.AxesHelper(axesSize);
+                this.scene.add(this.axesHelper);
+                
+                // 添加网格
+                const gridHelper = new THREE.GridHelper(30, 30, 0x444444, 0x222222);
+                gridHelper.position.y = -0.01;
+                this.scene.add(gridHelper);
+            },
+            
+            // 添加原子核
+            addNucleus() {
+                // 原子核几何体
+                const geometry = new THREE.SphereGeometry(0.5, 32, 32);
+                
+                // 原子核材质
+                const material = new THREE.MeshPhongMaterial({
+                    color: 0xff4444,
+                    emissive: 0xff0000,
+                    emissiveIntensity: 0.5,
+                    shininess: 100,
+                    specular: 0xff6666
+                });
+                
+                this.nucleus = new THREE.Mesh(geometry, material);
+                this.scene.add(this.nucleus);
+                
+                // 添加原子核发光光晕
+                const glowGeometry = new THREE.SphereGeometry(0.7, 32, 32);
+                const glowMaterial = new THREE.MeshBasicMaterial({
+                    color: 0xff4444,
+                    transparent: true,
+                    opacity: 0.3
+                });
+                const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+                this.nucleus.add(glow);
+            },
+            
+            // 创建电子云
+            createElectronCloud(pointCount) {
+                console.log(`创建电子云，点数: ${pointCount}`);
+                
+                // 移除现有的电子云
+                if (this.electronCloud) {
+                    this.scene.remove(this.electronCloud);
+                    if (this.electronCloud.geometry) {
+                        this.electronCloud.geometry.dispose();
+                    }
+                    if (this.electronCloud.material) {
+                        this.electronCloud.material.dispose();
+                    }
+                }
+                
+                this.pointsCount = pointCount;
+                
+                // 创建点云几何体
+                const geometry = new THREE.BufferGeometry();
+                const positions = new Float32Array(pointCount * 3);
+                const colors = new Float32Array(pointCount * 3);
+                
+                // 初始填充随机位置和颜色
+                for (let i = 0; i < pointCount; i++) {
+                    const i3 = i * 3;
+                    // 初始位置在原点附近
+                    positions[i3] = (Math.random() - 0.5) * 10;
+                    positions[i3 + 1] = (Math.random() - 0.5) * 10;
+                    positions[i3 + 2] = (Math.random() - 0.5) * 10;
+                    
+                    // 初始颜色（蓝色）
+                    colors[i3] = 0.4;
+                    colors[i3 + 1] = 0.6;
+                    colors[i3 + 2] = 1.0;
+                }
+                
+                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+                
+                // 创建点云材质
+                const material = new THREE.PointsMaterial({
+                    size: 0.15,
+                    vertexColors: true,
+                    transparent: true,
+                    opacity: 0.8,
+                    blending: THREE.AdditiveBlending,
+                    sizeAttenuation: true,
+                    depthWrite: false
+                });
+                
+                // 创建点云对象
+                this.electronCloud = new THREE.Points(geometry, material);
+                this.scene.add(this.electronCloud);
+                
+                console.log('电子云创建完成');
+            },
+            
+            // 更新电子云数据
+            updateElectronCloud(data, state) {
+                if (!this.electronCloud || !data || data.length === 0) {
+                    console.warn('无法更新电子云：无数据或电子云未创建');
+                    return;
+                }
+                
+                console.log(`更新电子云数据，点数: ${data.length}`);
+                
+                const geometry = this.electronCloud.geometry;
+                const positions = geometry.attributes.position.array;
+                const colors = geometry.attributes.color.array;
+                
+                const pointCount = Math.min(data.length, positions.length / 3);
+                
+                // 找出数据的最大范围
+                let maxX = 0, maxY = 0, maxZ = 0;
+                for (let i = 0; i < pointCount; i++) {
+                    const point = data[i];
+                    maxX = Math.max(maxX, Math.abs(point.x));
+                    maxY = Math.max(maxY, Math.abs(point.y));
+                    maxZ = Math.max(maxZ, Math.abs(point.z));
+                }
+                
+                const maxRange = Math.max(maxX, maxY, maxZ);
+                const scale = maxRange > 0 ? 8 / maxRange : 1;
+                
+                console.log(`数据范围: x:${maxX.toFixed(2)}, y:${maxY.toFixed(2)}, z:${maxZ.toFixed(2)}, 缩放因子: ${scale.toFixed(2)}`);
+                
+                for (let i = 0; i < pointCount; i++) {
+                    const point = data[i];
+                    const i3 = i * 3;
+                    
+                    // 更新位置并应用缩放
+                    positions[i3] = point.x * scale;
+                    positions[i3 + 1] = point.y * scale;
+                    positions[i3 + 2] = point.z * scale;
+                    
+                    // 基于概率更新颜色
+                    const probability = point.probability || 0;
+                    const intensity = Math.min(1, probability * 3);
+                    
+                    // 使用数据中的颜色或根据量子态设置颜色
+                    if (point.color) {
+                        colors[i3] = point.color[0] / 255;
+                        colors[i3 + 1] = point.color[1] / 255;
+                        colors[i3 + 2] = point.color[2] / 255;
+                    } else if (state) {
+                        const l = state.l || 0;
+                        
+                        switch(l) {
+                            case 0: // s轨道 - 蓝色
+                                colors[i3] = 0.4 * intensity;
+                                colors[i3 + 1] = 0.6 * intensity;
+                                colors[i3 + 2] = 1.0 * intensity;
+                                break;
+                            case 1: // p轨道 - 绿色
+                                colors[i3] = 0.4 * intensity;
+                                colors[i3 + 1] = 1.0 * intensity;
+                                colors[i3 + 2] = 0.6 * intensity;
+                                break;
+                            case 2: // d轨道 - 紫色
+                                colors[i3] = 0.8 * intensity;
+                                colors[i3 + 1] = 0.4 * intensity;
+                                colors[i3 + 2] = 1.0 * intensity;
+                                break;
+                            default: // 其他 - 青色
+                                colors[i3] = 0.4 * intensity;
+                                colors[i3 + 1] = 1.0 * intensity;
+                                colors[i3 + 2] = 1.0 * intensity;
+                        }
+                    }
+                }
+                
+                // 标记几何体需要更新
+                geometry.attributes.position.needsUpdate = true;
+                geometry.attributes.color.needsUpdate = true;
+                
+                // 更新点数量
+                geometry.setDrawRange(0, pointCount);
+                
+                // 重新计算边界框
+                geometry.computeBoundingSphere();
+                
+                console.log(`电子云更新完成，显示${pointCount}个点`);
+            },
+            
+            // 设置量子态数据
+            setData(data, state) {
+                this.currentData = data;
+                this.currentState = state;
+                
+                if (data && data.length > 0) {
+                    console.log(`设置数据，状态: ${state ? state.label : '无状态'}, 数据点: ${data.length}`);
+                    this.updateElectronCloud(data, state);
+                    
+                    // 根据量子态调整视图
+                    this.adjustViewForState(state);
+                    
+                    // 显示电子云
+                    if (this.electronCloud) {
+                        this.electronCloud.visible = true;
+                        console.log('电子云已显示');
+                    }
+                } else {
+                    console.warn('setData: 无数据或数据为空');
+                }
+            },
+            
+            // 根据量子态调整视图
+            adjustViewForState(state) {
+                if (!state) return;
+                
+                const n = state.n || 1;
+                
+                // 根据主量子数调整相机距离
+                const baseDistance = 20;
+                const distance = baseDistance + (n - 1) * 5;
+                
+                this.camera.position.set(0, 0, distance);
+                this.camera.lookAt(0, 0, 0);
+                
+                console.log(`调整视图: n=${n}, 相机距离=${distance.toFixed(1)}`);
+            },
+            
+            // 动画循环
+            animate() {
+                if (!this.isInitialized) return;
+                
+                // 请求下一帧
+                this.animationFrameId = requestAnimationFrame(() => this.animate());
+                
+                // 旋转电子云（如果动画开启）
+                if (this.isAnimating && this.electronCloud && this.electronCloud.visible) {
+                    this.electronCloud.rotation.y += 0.005;
+                }
+                
+                // 原子核脉动效果
+                if (this.nucleus) {
+                    const time = Date.now() * 0.001;
+                    const scale = 1 + 0.1 * Math.sin(time * 2);
+                    this.nucleus.scale.set(scale, scale, scale);
+                }
+                
+                // 渲染场景
+                this.renderer.render(this.scene, this.camera);
+            },
+            
+            // 窗口大小变化处理
+            onWindowResize() {
+                if (!this.camera || !this.renderer) return;
+                
+                const canvas = this.renderer.domElement;
+                const width = canvas.clientWidth;
+                const height = canvas.clientHeight;
+                
+                // 更新相机
+                this.camera.aspect = width / height;
+                this.camera.updateProjectionMatrix();
+                
+                // 更新渲染器
+                this.renderer.setSize(width, height, false);
+            },
+            
+            // 开始/停止动画
+            toggleAnimation() {
+                this.isAnimating = !this.isAnimating;
+                return this.isAnimating;
+            },
+            
+            // 重置视图
+            resetView() {
+                // 重置相机位置
+                this.camera.position.set(0, 0, 25);
+                this.camera.lookAt(0, 0, 0);
+                
+                // 重置电子云旋转
+                if (this.electronCloud) {
+                    this.electronCloud.rotation.set(0, 0, 0);
+                }
+                
+                console.log('视图已重置');
+            },
+            
+            // 切换可视化模式
+            setVisualizationMode(mode) {
+                if (!this.electronCloud || !this.electronCloud.material) return;
+                
+                switch(mode) {
+                    case 'points':
+                        this.electronCloud.material.size = 0.15;
+                        this.electronCloud.material.opacity = 0.8;
+                        break;
+                    case 'density':
+                        this.electronCloud.material.size = 0.25;
+                        this.electronCloud.material.opacity = 0.6;
+                        break;
+                    case 'surface':
+                        this.electronCloud.material.size = 0.1;
+                        this.electronCloud.material.opacity = 0.9;
+                        break;
+                }
+                
+                this.electronCloud.material.needsUpdate = true;
+            },
+            
+            // 截图功能
+            captureScreenshot() {
+                if (!this.renderer) return null;
+                
+                try {
+                    // 渲染当前帧
+                    this.renderer.render(this.scene, this.camera);
+                    
+                    // 获取数据URL
+                    const dataURL = this.renderer.domElement.toDataURL('image/png');
+                    return dataURL;
+                } catch (error) {
+                    console.error('Error capturing screenshot:', error);
+                    return null;
+                }
+            },
+            
+            // 清理资源
+            dispose() {
+                if (this.animationFrameId) {
+                    cancelAnimationFrame(this.animationFrameId);
+                    this.animationFrameId = null;
+                }
+                
+                if (this.renderer) {
+                    this.renderer.dispose();
+                }
+                
+                this.isInitialized = false;
+                console.log('Visualization engine disposed');
+            }
+        };
+
+        // 主应用程序
+        class HydrogenVisualizationApp {
+            constructor() {
+                this.isInitialized = false;
+                this.is3DEnabled = true;
+                this.loadingElement = null;
+                this.currentQuantumState = null;
+                this.notifications = [];
+                this.visualizationMode = 'points';
+                this.currentAnimationSpeed = 1.0;
+            }
+            
+            init() {
+                console.log('Initializing Hydrogen Visualization App...');
+                
+                this.loadingElement = document.getElementById('loadingText');
+                
+                // 检查WebGL支持
+                this.checkWebGLSupport();
+                
+                // 设置事件监听器
+                this.setupEventListeners();
+                
+                // 初始化可视化
+                this.initVisualization();
+                
+                // 更新UI
+                this.updateUI();
+                
+                console.log('App initialized successfully');
+            }
+            
+            // 检查WebGL支持
+            checkWebGLSupport() {
+                try {
+                    const canvas = document.createElement('canvas');
+                    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                    if (!gl) {
+                        console.warn('WebGL not supported');
+                        this.is3DEnabled = false;
+                        this.showNotification('WebGL不支持，正在使用简化模式', 'warning');
+                    } else {
+                        console.log('WebGL is supported');
+                    }
+                } catch (error) {
+                    console.warn('WebGL check failed:', error);
+                    this.is3DEnabled = false;
+                }
+            }
+            
+            // 初始化可视化引擎
+            initVisualization() {
+                if (this.loadingElement) {
+                    this.loadingElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>正在初始化可视化引擎...</span>';
+                    this.loadingElement.style.display = 'flex';
+                }
+                
+                // 延迟初始化，确保DOM完全加载
+                setTimeout(() => {
+                    try {
+                        if (this.is3DEnabled && typeof VisualizationEngine !== 'undefined') {
+                            console.log('Attempting to initialize 3D engine...');
+                            const initSuccess = VisualizationEngine.init('electronCanvas');
+                            
+                            if (initSuccess) {
+                                console.log('3D visualization engine initialized');
+                                this.isInitialized = true;
+                                this.showNotification('3D可视化引擎已就绪', 'success');
+                                
+                                // 默认选择1s轨道
+                                setTimeout(() => {
+                                    this.selectQuantumState('1,0,0');
+                                }, 500);
+                            } else {
+                                console.warn('3D engine failed');
+                                this.showNotification('3D引擎初始化失败', 'error');
+                            }
+                        } else {
+                            console.log('3D not enabled or engine not available');
+                        }
+                        
+                        if (this.loadingElement) {
+                            this.loadingElement.style.display = 'none';
+                        }
+                    } catch (error) {
+                        console.error('Error initializing visualization:', error);
+                        this.showError('初始化过程中发生错误: ' + error.message);
+                    }
+                }, 500);
+            }
+            
+            // 设置事件监听器
+            setupEventListeners() {
+                // 量子态选择
+                const quantumSelect = document.getElementById('quantumState');
+                if (quantumSelect) {
+                    quantumSelect.addEventListener('change', (e) => this.onQuantumStateChange(e));
+                }
+                
+                // 可视化模式切换
+                document.querySelectorAll('.mode-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => this.onModeButtonClick(e));
+                });
+                
+                // 参数控制
+                const pointDensity = document.getElementById('pointDensity');
+                if (pointDensity) {
+                    pointDensity.addEventListener('input', (e) => this.onParameterChange(e));
+                    pointDensity.addEventListener('change', (e) => this.onParameterChange(e));
+                }
+                
+                const probabilityCutoff = document.getElementById('probabilityCutoff');
+                if (probabilityCutoff) {
+                    probabilityCutoff.addEventListener('input', (e) => this.onParameterChange(e));
+                    probabilityCutoff.addEventListener('change', (e) => this.onParameterChange(e));
+                }
+                
+                const animationSpeed = document.getElementById('animationSpeed');
+                if (animationSpeed) {
+                    animationSpeed.addEventListener('input', (e) => this.onParameterChange(e));
+                    animationSpeed.addEventListener('change', (e) => this.onParameterChange(e));
+                }
+                
+                // 控制按钮
+                const animateBtn = document.getElementById('animateBtn');
+                if (animateBtn) {
+                    animateBtn.addEventListener('click', () => this.onAnimateButtonClick());
+                }
+                
+                const screenshotBtn = document.getElementById('screenshotBtn');
+                if (screenshotBtn) {
+                    screenshotBtn.addEventListener('click', () => this.onScreenshotButtonClick());
+                }
+                
+                const exportDataBtn = document.getElementById('exportDataBtn');
+                if (exportDataBtn) {
+                    exportDataBtn.addEventListener('click', () => this.onExportDataButtonClick());
+                }
+                
+                const resetViewBtn = document.getElementById('resetViewBtn');
+                if (resetViewBtn) {
+                    resetViewBtn.addEventListener('click', () => this.onResetViewButtonClick());
+                }
+                
+                // 画布控制按钮
+                const zoomInBtn = document.getElementById('zoomInBtn');
+                if (zoomInBtn) {
+                    zoomInBtn.addEventListener('click', () => this.zoomIn());
+                }
+                
+                const zoomOutBtn = document.getElementById('zoomOutBtn');
+                if (zoomOutBtn) {
+                    zoomOutBtn.addEventListener('click', () => this.zoomOut());
+                }
+                
+                const rotateBtn = document.getElementById('rotateBtn');
+                if (rotateBtn) {
+                    rotateBtn.addEventListener('click', () => this.toggleRotation());
+                }
+                
+                // 导航链接
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    link.addEventListener('click', (e) => this.onNavLinkClick(e));
+                });
+                
+                // 窗口大小改变
+                window.addEventListener('resize', () => this.onWindowResize());
+                
+                // 键盘快捷键
+                this.setupKeyboardShortcuts();
+            }
+            
+            // 设置键盘快捷键
+            setupKeyboardShortcuts() {
+                document.addEventListener('keydown', (e) => {
+                    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+                        return;
+                    }
+                    
+                    switch(e.key.toLowerCase()) {
+                        case ' ':
+                            e.preventDefault();
+                            this.onAnimateButtonClick();
+                            break;
+                        case 'r':
+                            this.onResetViewButtonClick();
+                            break;
+                        case '+':
+                        case '=':
+                            this.zoomIn();
+                            break;
+                        case '-':
+                        case '_':
+                            this.zoomOut();
+                            break;
+                        case 's':
+                            this.onScreenshotButtonClick();
+                            break;
+                        case '1':
+                            this.selectQuantumState('1,0,0');
+                            break;
+                        case '2':
+                            this.selectQuantumState('2,0,0');
+                            break;
+                        case '3':
+                            this.selectQuantumState('3,0,0');
+                            break;
+                    }
+                });
+            }
+            
+            // 选择量子态
+            selectQuantumState(value) {
+                const selectElement = document.getElementById('quantumState');
+                if (selectElement) {
+                    selectElement.value = value;
+                    this.onQuantumStateChange({ target: selectElement });
+                }
+            }
+            
+            // 量子态改变事件
+            onQuantumStateChange(event) {
+                const value = event.target.value;
+                if (!value) return;
+                
+                console.log('Selected quantum state:', value);
+                
+                const [n, l, m] = value.split(',').map(Number);
+                
+                const state = QuantumStates.getState(n, l, m);
+                if (!state) {
+                    this.showError('无效的量子态');
+                    return;
+                }
+                
+                this.currentQuantumState = state;
+                
+                // 更新量子数显示
+                this.updateQuantumNumberDisplay(n, l, m);
+                
+                // 生成电子云数据
+                this.generateAndDisplayElectronCloud(n, l, m);
+            }
+            
+            // 更新量子数显示
+            updateQuantumNumberDisplay(n, l, m) {
+                const nValue = document.getElementById('nValue');
+                const lValue = document.getElementById('lValue');
+                const mValue = document.getElementById('mValue');
+                
+                if (nValue) nValue.textContent = n;
+                if (lValue) {
+                    const orbitalNames = ['s', 'p', 'd', 'f'];
+                    const orbitalName = orbitalNames[l] || l;
+                    lValue.innerHTML = `${l} <span style="font-size:0.8em;color:#94a3b8">(${orbitalName})</span>`;
+                }
+                if (mValue) mValue.textContent = m;
+            }
+            
+            // 生成并显示电子云
+            generateAndDisplayElectronCloud(n, l, m) {
+                if (!this.isInitialized) {
+                    this.showError('可视化引擎未初始化');
+                    return;
+                }
+                
+                this.showLoading('正在生成电子云数据...');
+                
+                requestAnimationFrame(() => {
+                    try {
+                        const numPoints = parseInt(document.getElementById('pointDensity').value) || 3000;
+                        const cutoff = parseFloat(document.getElementById('probabilityCutoff').value) || 0.05;
+                        
+                        console.log(`Generating electron cloud: n=${n}, l=${l}, m=${m}, points=${numPoints}`);
+                        
+                        // 生成电子云数据
+                        const electronData = this.generateElectronCloudData(n, l, m, numPoints);
+                        
+                        if (!electronData || electronData.length === 0) {
+                            throw new Error('电子云数据生成失败');
+                        }
+                        
+                        // 应用概率阈值过滤
+                        const filteredData = electronData.filter(point => point.probability >= cutoff);
+                        
+                        console.log(`Generated ${electronData.length} points, filtered to ${filteredData.length} points`);
+                        
+                        // 更新可视化
+                        if (this.is3DEnabled && VisualizationEngine && VisualizationEngine.setData) {
+                            VisualizationEngine.setData(filteredData, this.currentQuantumState);
+                        }
+                        
+                        this.hideLoading();
+                        
+                        this.showNotification(
+                            `已切换到 ${this.currentQuantumState.label} 轨道<br>` +
+                            `<small>${this.currentQuantumState.description}</small>`, 
+                            'success'
+                        );
+                        
+                    } catch (error) {
+                        console.error('Error generating electron cloud:', error);
+                        this.showError('生成电子云数据失败: ' + error.message);
+                    }
+                });
+            }
+            
+            // 生成电子云数据
+            generateElectronCloudData(n, l, m, numPoints) {
+                const data = [];
+                const maxRadius = n * 3;
+                
+                // 轨道颜色
+                const getOrbitalColor = (l, probability, x, y, z) => {
+                    const orbitalColors = [
+                        [100, 150, 255], // s轨道 - 蓝色
+                        [100, 255, 150], // p轨道 - 绿色
+                        [200, 100, 255], // d轨道 - 紫色
+                        [255, 200, 100]  // f轨道 - 橙色
+                    ];
+                    
+                    const baseColor = orbitalColors[l] || orbitalColors[0];
+                    const intensity = 0.5 + probability * 0.5;
+                    
+                    return [
+                        Math.min(255, Math.floor(baseColor[0] * intensity)),
+                        Math.min(255, Math.floor(baseColor[1] * intensity)),
+                        Math.min(255, Math.floor(baseColor[2] * intensity))
+                    ];
+                };
+                
+                // 生成点
+                for (let i = 0; i < numPoints; i++) {
+                    let x, y, z, probability;
+                    
+                    // 根据轨道类型生成不同分布
+                    if (l === 0) { // s轨道 - 球形
+                        const phi = Math.random() * Math.PI * 2;
+                        const theta = Math.acos(2 * Math.random() - 1);
+                        const r = Math.random() * maxRadius;
+                        
+                        x = r * Math.sin(theta) * Math.cos(phi);
+                        y = r * Math.sin(theta) * Math.sin(phi);
+                        z = r * Math.cos(theta);
+                        
+                        probability = Math.exp(-r / n);
+                    } 
+                    else if (l === 1) { // p轨道
+                        const phi = Math.random() * Math.PI * 2;
+                        const theta = Math.acos(2 * Math.random() - 1);
+                        const r = Math.random() * maxRadius;
+                        
+                        x = r * Math.sin(theta) * Math.cos(phi);
+                        y = r * Math.sin(theta) * Math.sin(phi);
+                        z = r * Math.cos(theta);
+                        
+                        // p轨道的概率分布
+                        if (m === 0) { // pz
+                            probability = Math.exp(-r / n) * Math.abs(Math.cos(theta));
+                            // 增强z轴方向
+                            z *= 1.5;
+                        } else if (m === 1) { // px
+                            probability = Math.exp(-r / n) * Math.abs(Math.sin(theta) * Math.cos(phi));
+                            // 增强x轴方向
+                            x *= 1.5;
+                        } else if (m === -1) { // py
+                            probability = Math.exp(-r / n) * Math.abs(Math.sin(theta) * Math.sin(phi));
+                            // 增强y轴方向
+                            y *= 1.5;
+                        } else {
+                            probability = Math.exp(-r / n);
+                        }
+                    }
+                    else { // d轨道及其他
+                        const phi = Math.random() * Math.PI * 2;
+                        const theta = Math.acos(2 * Math.random() - 1);
+                        const r = Math.random() * maxRadius;
+                        
+                        x = r * Math.sin(theta) * Math.cos(phi);
+                        y = r * Math.sin(theta) * Math.sin(phi);
+                        z = r * Math.cos(theta);
+                        
+                        probability = Math.exp(-r / n) * Math.pow(Math.sin(theta), 2);
+                        
+                        // d轨道的特殊形状
+                        if (m === 0) { // dz²
+                            probability *= Math.abs(3 * Math.cos(theta) * Math.cos(theta) - 1);
+                        }
+                    }
+                    
+                    // 归一化概率
+                    probability = Math.min(1, probability * 2);
+                    
+                    data.push({
+                        x: x,
+                        y: y,
+                        z: z,
+                        probability: probability,
+                        color: getOrbitalColor(l, probability, x, y, z)
+                    });
+                }
+                
+                return data;
+            }
+            
+            // 模式按钮点击事件
+            onModeButtonClick(event) {
+                const button = event.currentTarget;
+                const mode = button.dataset.mode;
+                
+                document.querySelectorAll('.mode-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                
+                button.classList.add('active');
+                
+                this.visualizationMode = mode;
+                
+                if (this.is3DEnabled && VisualizationEngine && VisualizationEngine.setVisualizationMode) {
+                    VisualizationEngine.setVisualizationMode(mode);
+                }
+                
+                this.showNotification(`已切换到${this.getModeName(mode)}模式`, 'info');
+            }
+            
+            // 获取模式名称
+            getModeName(mode) {
+                const modeNames = {
+                    'points': '点状云',
+                    'density': '密度图',
+                    'surface': '等值面'
+                };
+                return modeNames[mode] || mode;
+            }
+            
+            // 参数改变事件
+            onParameterChange(event) {
+                const target = event.target;
+                const value = target.value;
+                const id = target.id;
+                
+                switch(id) {
+                    case 'pointDensity':
+                        document.getElementById('densityValue').textContent = value;
+                        if (this.currentQuantumState) {
+                            this.generateAndDisplayElectronCloud(
+                                this.currentQuantumState.n,
+                                this.currentQuantumState.l,
+                                this.currentQuantumState.m
+                            );
+                        }
+                        break;
+                        
+                    case 'probabilityCutoff':
+                        document.getElementById('cutoffValue').textContent = parseFloat(value).toFixed(2);
+                        if (this.currentQuantumState) {
+                            this.generateAndDisplayElectronCloud(
+                                this.currentQuantumState.n,
+                                this.currentQuantumState.l,
+                                this.currentQuantumState.m
+                            );
+                        }
+                        break;
+                        
+                    case 'animationSpeed':
+                        const speed = parseFloat(value);
+                        document.getElementById('speedValue').textContent = speed.toFixed(1) + 'x';
+                        this.currentAnimationSpeed = speed;
+                        break;
+                }
+            }
+            
+            // 动画按钮点击事件
+            onAnimateButtonClick() {
+                if (!this.isInitialized) {
+                    this.showError('可视化引擎未初始化');
+                    return;
+                }
+                
+                try {
+                    let isAnimating = false;
+                    
+                    if (this.is3DEnabled && VisualizationEngine && VisualizationEngine.toggleAnimation) {
+                        isAnimating = VisualizationEngine.toggleAnimation();
+                    }
+                    
+                    const button = document.getElementById('animateBtn');
+                    if (button) {
+                        if (isAnimating) {
+                            button.innerHTML = '<i class="fas fa-pause"></i> 暂停动画';
+                            this.showNotification('动画已开始', 'success');
+                        } else {
+                            button.innerHTML = '<i class="fas fa-play"></i> 开始动画';
+                            this.showNotification('动画已暂停', 'info');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error toggling animation:', error);
+                    this.showError('控制动画失败');
+                }
+            }
+            
+            // 截图按钮点击事件
+            onScreenshotButtonClick() {
+                if (!this.isInitialized) {
+                    this.showError('可视化引擎未初始化');
+                    return;
+                }
+                
+                try {
+                    let screenshotUrl = null;
+                    
+                    if (this.is3DEnabled && VisualizationEngine && VisualizationEngine.captureScreenshot) {
+                        screenshotUrl = VisualizationEngine.captureScreenshot();
+                    }
+                    
+                    if (screenshotUrl) {
+                        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                        const stateLabel = this.currentQuantumState ? this.currentQuantumState.label : 'unknown';
+                        const filename = `hydrogen-electron-cloud-${stateLabel}-${timestamp}.png`;
+                        
+                        const link = document.createElement('a');
+                        link.download = filename;
+                        link.href = screenshotUrl;
+                        link.click();
+                        
+                        this.showNotification('截图已保存为 ' + filename, 'success');
+                    } else {
+                        throw new Error('无法生成截图');
+                    }
+                } catch (error) {
+                    console.error('Error capturing screenshot:', error);
+                    this.showError('截图失败: ' + error.message);
+                }
+            }
+            
+            // 导出数据按钮点击事件
+            onExportDataButtonClick() {
+                if (!this.currentQuantumState) {
+                    this.showError('请先选择量子态');
+                    return;
+                }
+                
+                try {
+                    const n = this.currentQuantumState.n;
+                    const l = this.currentQuantumState.l;
+                    const m = this.currentQuantumState.m;
+                    const numPoints = parseInt(document.getElementById('pointDensity').value) || 3000;
+                    
+                    const electronData = this.generateElectronCloudData(n, l, m, Math.min(numPoints, 10000));
+                    
+                    const exportData = {
+                        quantumState: this.currentQuantumState,
+                        parameters: {
+                            n: n,
+                            l: l,
+                            m: m,
+                            points: electronData.length,
+                            timestamp: new Date().toISOString()
+                        },
+                        data: electronData.map(point => ({
+                            x: point.x,
+                            y: point.y,
+                            z: point.z,
+                            probability: point.probability,
+                            color: point.color
+                        }))
+                    };
+                    
+                    const jsonStr = JSON.stringify(exportData, null, 2);
+                    const blob = new Blob([jsonStr], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    
+                    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                    const filename = `hydrogen-data-${this.currentQuantumState.label}-${timestamp}.json`;
+                    
+                    const link = document.createElement('a');
+                    link.download = filename;
+                    link.href = url;
+                    link.click();
+                    
+                    setTimeout(() => URL.revokeObjectURL(url), 100);
+                    
+                    this.showNotification('数据已导出为 ' + filename, 'success');
+                    
+                } catch (error) {
+                    console.error('Error exporting data:', error);
+                    this.showError('导出数据失败: ' + error.message);
+                }
+            }
+            
+            // 重置视图按钮点击事件
+            onResetViewButtonClick() {
+                if (!this.isInitialized) {
+                    this.showError('可视化引擎未初始化');
+                    return;
+                }
+                
+                try {
+                    if (this.is3DEnabled && VisualizationEngine && VisualizationEngine.resetView) {
+                        VisualizationEngine.resetView();
+                    }
+                    
+                    this.showNotification('视图已重置', 'info');
+                } catch (error) {
+                    console.error('Error resetting view:', error);
+                    this.showError('重置视图失败');
+                }
+            }
+            
+            // 放大
+            zoomIn() {
+                if (this.is3DEnabled && VisualizationEngine && VisualizationEngine.camera) {
+                    VisualizationEngine.camera.position.multiplyScalar(0.9);
+                    this.showNotification('已放大', 'info');
+                }
+            }
+            
+            // 缩小
+            zoomOut() {
+                if (this.is3DEnabled && VisualizationEngine && VisualizationEngine.camera) {
+                    VisualizationEngine.camera.position.multiplyScalar(1.1);
+                    this.showNotification('已缩小', 'info');
+                }
+            }
+            
+            // 切换旋转
+            toggleRotation() {
+                if (this.is3DEnabled && VisualizationEngine && VisualizationEngine.isAnimating !== undefined) {
+                    VisualizationEngine.isAnimating = !VisualizationEngine.isAnimating;
+                    const button = document.getElementById('rotateBtn');
+                    if (button) {
+                        button.classList.toggle('active');
+                        this.showNotification(
+                            VisualizationEngine.isAnimating ? '旋转已启用' : '旋转已禁用',
+                            'info'
+                        );
+                    }
+                }
+            }
+            
+            // 导航链接点击事件
+            onNavLinkClick(event) {
+                event.preventDefault();
+                
+                const link = event.currentTarget;
+                const targetId = link.getAttribute('href').substring(1);
+                
+                const targetElement = document.getElementById(targetId);
+                if (targetElement) {
+                    targetElement.scrollIntoView({ 
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+                
+                document.querySelectorAll('.nav-link').forEach(l => {
+                    l.classList.remove('active');
+                });
+                link.classList.add('active');
+            }
+            
+            // 窗口大小改变事件
+            onWindowResize() {
+                if (this.is3DEnabled && this.isInitialized && VisualizationEngine && VisualizationEngine.onWindowResize) {
+                    VisualizationEngine.onWindowResize();
+                }
+            }
+            
+            // 更新UI
+            updateUI() {
+                const pointDensity = document.getElementById('pointDensity');
+                const probabilityCutoff = document.getElementById('probabilityCutoff');
+                const animationSpeed = document.getElementById('animationSpeed');
+                
+                if (pointDensity) {
+                    document.getElementById('densityValue').textContent = pointDensity.value;
+                }
+                
+                if (probabilityCutoff) {
+                    document.getElementById('cutoffValue').textContent = 
+                        parseFloat(probabilityCutoff.value).toFixed(2);
+                }
+                
+                if (animationSpeed) {
+                    const speed = parseFloat(animationSpeed.value);
+                    document.getElementById('speedValue').textContent = speed.toFixed(1) + 'x';
+                    this.currentAnimationSpeed = speed;
+                }
+                
+                const modeButtons = document.querySelectorAll('.mode-btn');
+                if (modeButtons.length > 0) {
+                    modeButtons[0].classList.add('active');
+                }
+            }
+            
+            // 显示加载状态
+            showLoading(message) {
+                if (this.loadingElement) {
+                    this.loadingElement.style.display = 'flex';
+                    this.loadingElement.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>${message}</span>`;
+                }
+            }
+            
+            // 隐藏加载状态
+            hideLoading() {
+                if (this.loadingElement) {
+                    this.loadingElement.style.display = 'none';
+                }
+            }
+            
+            // 显示错误
+            showError(message) {
+                console.error(message);
+                this.showNotification(message, 'error');
+                
+                if (this.loadingElement) {
+                    this.loadingElement.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <span>${message}</span>`;
+                }
+            }
+            
+            // 显示通知
+            showNotification(message, type = 'info') {
+                const oldNotifications = document.querySelectorAll('.notification');
+                oldNotifications.forEach(notification => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                });
+                
+                const notification = document.createElement('div');
+                notification.className = `notification notification-${type}`;
+                notification.innerHTML = `
+                    <div class="notification-content">
+                        <i class="fas ${this.getNotificationIcon(type)}"></i>
+                        <span>${message}</span>
+                    </div>
+                    <button class="notification-close"><i class="fas fa-times"></i></button>
+                `;
+                
+                document.body.appendChild(notification);
+                
+                notification.querySelector('.notification-close').addEventListener('click', () => {
+                    notification.remove();
+                });
+                
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 5000);
+                
+                this.notifications.push(notification);
+            }
+            
+            // 获取通知图标
+            getNotificationIcon(type) {
+                const icons = {
+                    'info': 'fa-info-circle',
+                    'success': 'fa-check-circle',
+                    'warning': 'fa-exclamation-triangle',
+                    'error': 'fa-exclamation-circle'
+                };
+                return icons[type] || 'fa-info-circle';
+            }
+            
+            // 清理资源
+            dispose() {
+                if (this.is3DEnabled && VisualizationEngine && VisualizationEngine.dispose) {
+                    VisualizationEngine.dispose();
+                }
+                
+                this.notifications.forEach(notification => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                });
+                this.notifications = [];
+                
+                console.log('App disposed');
+            }
+        }
+
+        // 创建并初始化应用程序
+        let app;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM Content Loaded, starting app...');
+            
+            try {
+                app = new HydrogenVisualizationApp();
+                app.init();
+            } catch (error) {
+                console.error('Failed to initialize app:', error);
+                document.body.innerHTML = `
+                    <div style="color:white;padding:40px;text-align:center;">
+                        <h2>应用程序初始化失败</h2>
+                        <p>${error.message}</p>
+                        <p>请检查控制台获取详细信息</p>
+                    </div>
+                `;
+            }
+        });
+
+        // 页面卸载时清理
+        window.addEventListener('beforeunload', function() {
+            if (app && app.dispose) {
+                app.dispose();
+            }
+        });
+
+        // 导出到全局作用域
+        window.HydrogenVisualizationApp = HydrogenVisualizationApp;
+        window.app = app;
+        // JavaScript代码结束
+    </script>
 </body>
 </html>
