@@ -8,6 +8,24 @@ class HydrogenVisualizationApp {
         this.notifications = [];
         this.visualizationMode = 'points';
         this.currentAnimationSpeed = 1.0;
+        this.quantumStates = this.initializeQuantumStates();
+    }
+    
+    initializeQuantumStates() {
+        return [
+            { n: 1, l: 0, m: 0, label: "1s", name: "1s轨道", description: "基态，球形对称" },
+            { n: 2, l: 0, m: 0, label: "2s", name: "2s轨道", description: "第一激发态，球形对称" },
+            { n: 2, l: 1, m: 0, label: "2pz", name: "2pz轨道", description: "哑铃形，沿z轴" },
+            { n: 2, l: 1, m: 1, label: "2px", name: "2px轨道", description: "哑铃形，沿x轴" },
+            { n: 2, l: 1, m: -1, label: "2py", name: "2py轨道", description: "哑铃形，沿y轴" },
+            { n: 3, l: 0, m: 0, label: "3s", name: "3s轨道", description: "球形对称，有径向节面" },
+            { n: 3, l: 1, m: 0, label: "3pz", name: "3pz轨道", description: "哑铃形，有径向节面" },
+            { n: 3, l: 2, m: 0, label: "3dz²", name: "3dz²轨道", description: "花瓣形，沿z轴" },
+            { n: 3, l: 2, m: 1, label: "3dxz", name: "3dxz轨道", description: "花瓣形，在xz平面" },
+            { n: 3, l: 2, m: -1, label: "3dyz", name: "3dyz轨道", description: "花瓣形，在yz平面" },
+            { n: 3, l: 2, m: 2, label: "3dx²-y²", name: "3dx²-y²轨道", description: "花瓣形，在xy平面沿x,y轴" },
+            { n: 3, l: 2, m: -2, label: "3dxy", name: "3dxy轨道", description: "花瓣形，在xy平面对角线" }
+        ];
     }
     
     init() {
@@ -17,9 +35,6 @@ class HydrogenVisualizationApp {
         
         // 检查WebGL支持
         this.checkWebGLSupport();
-        
-        // 加载量子态选项
-        this.loadQuantumStateOptions();
         
         // 设置事件监听器
         this.setupEventListeners();
@@ -64,46 +79,29 @@ class HydrogenVisualizationApp {
         // 延迟初始化，确保DOM完全加载
         setTimeout(() => {
             try {
-                let initSuccess = false;
-                
                 if (this.is3DEnabled && typeof VisualizationEngine !== 'undefined') {
                     console.log('Attempting to initialize 3D engine...');
-                    initSuccess = VisualizationEngine.init('electronCanvas');
+                    const initSuccess = VisualizationEngine.init('electronCanvas');
                     
                     if (initSuccess) {
                         console.log('3D visualization engine initialized');
                         this.isInitialized = true;
                         this.showNotification('3D可视化引擎已就绪', 'success');
+                        
+                        // 默认选择1s轨道
+                        setTimeout(() => {
+                            this.selectQuantumState('1,0,0');
+                        }, 500);
                     } else {
-                        console.warn('3D engine failed, falling back to 2D');
-                        this.is3DEnabled = false;
+                        console.warn('3D engine failed');
+                        this.showNotification('3D引擎初始化失败', 'error');
                     }
-                }
-                
-                // 如果3D失败或不可用，使用2D降级方案
-                if (!this.is3DEnabled && typeof FallbackVisualization !== 'undefined') {
-                    console.log('Initializing 2D fallback visualization...');
-                    initSuccess = FallbackVisualization.init('electronCanvas');
-                    
-                    if (initSuccess) {
-                        console.log('2D fallback visualization initialized');
-                        this.isInitialized = true;
-                        this.showNotification('2D可视化模式已启用', 'info');
-                    }
-                }
-                
-                if (initSuccess) {
-                    if (this.loadingElement) {
-                        this.loadingElement.style.display = 'none';
-                    }
-                    
-                    // 默认选择1s轨道
-                    setTimeout(() => {
-                        this.selectQuantumState('1,0,0');
-                    }, 1000);
                 } else {
-                    console.error('All visualization engines failed');
-                    this.showError('无法初始化可视化引擎，请检查控制台日志');
+                    console.log('3D not enabled or engine not available');
+                }
+                
+                if (this.loadingElement) {
+                    this.loadingElement.style.display = 'none';
                 }
             } catch (error) {
                 console.error('Error initializing visualization:', error);
@@ -112,48 +110,16 @@ class HydrogenVisualizationApp {
         }, 500);
     }
     
-    // 加载量子态选项
-    loadQuantumStateOptions() {
-        const selectElement = document.getElementById('quantumState');
-        if (!selectElement) {
-            console.error('Quantum state select element not found');
-            return;
-        }
-        
-        const states = QuantumStates.getAllStates();
-        if (!states || states.length === 0) {
-            console.error('No quantum states found');
-            return;
-        }
-        
-        // 清空现有选项
-        selectElement.innerHTML = '<option value="" disabled selected>请选择量子态</option>';
-        
-        // 按主量子数分组
-        const groupedStates = {};
-        states.forEach(state => {
-            if (!groupedStates[state.n]) {
-                groupedStates[state.n] = [];
-            }
-            groupedStates[state.n].push(state);
-        });
-        
-        // 添加量子态选项（按n值分组）
-        Object.keys(groupedStates).sort((a, b) => parseInt(a) - parseInt(b)).forEach(n => {
-            const group = document.createElement('optgroup');
-            group.label = `n = ${n} (主量子数)`;
-            
-            groupedStates[n].forEach(state => {
-                const option = document.createElement('option');
-                option.value = `${state.n},${state.l},${state.m}`;
-                option.textContent = `${state.label} - ${state.description}`;
-                group.appendChild(option);
-            });
-            
-            selectElement.appendChild(group);
-        });
-        
-        console.log(`Loaded ${states.length} quantum states`);
+    // 获取量子态信息
+    getQuantumState(n, l, m) {
+        return this.quantumStates.find(state => 
+            state.n === n && state.l === l && state.m === m
+        ) || null;
+    }
+    
+    // 获取所有量子态
+    getAllQuantumStates() {
+        return this.quantumStates;
     }
     
     // 设置事件监听器
@@ -240,7 +206,6 @@ class HydrogenVisualizationApp {
     // 设置键盘快捷键
     setupKeyboardShortcuts() {
         document.addEventListener('keydown', (e) => {
-            // 防止在输入框中触发快捷键
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
                 return;
             }
@@ -293,11 +258,9 @@ class HydrogenVisualizationApp {
         
         console.log('Selected quantum state:', value);
         
-        // 解析量子态
         const [n, l, m] = value.split(',').map(Number);
         
-        // 获取量子态信息
-        const state = QuantumStates.getState(n, l, m);
+        const state = this.getQuantumState(n, l, m);
         if (!state) {
             this.showError('无效的量子态');
             return;
@@ -307,9 +270,6 @@ class HydrogenVisualizationApp {
         
         // 更新量子数显示
         this.updateQuantumNumberDisplay(n, l, m);
-        
-        // 更新轨道信息
-        this.updateOrbitalInfo(state);
         
         // 生成电子云数据
         this.generateAndDisplayElectronCloud(n, l, m);
@@ -322,26 +282,12 @@ class HydrogenVisualizationApp {
         const mValue = document.getElementById('mValue');
         
         if (nValue) nValue.textContent = n;
-        if (lValue) lValue.textContent = l;
-        if (mValue) mValue.textContent = m;
-        
-        // 添加轨道符号
-        const orbitalSymbol = QuantumStates.getOrbitalName(l);
         if (lValue) {
-            lValue.innerHTML = `${l} <span style="font-size:0.8em;color:#94a3b8">(${orbitalSymbol})</span>`;
+            const orbitalNames = ['s', 'p', 'd', 'f'];
+            const orbitalName = orbitalNames[l] || l;
+            lValue.innerHTML = `${l} <span style="font-size:0.8em;color:#94a3b8">(${orbitalName})</span>`;
         }
-    }
-    
-    // 更新轨道信息
-    updateOrbitalInfo(state) {
-        // 可以在这里添加更多轨道信息的显示
-        console.log('Orbital info:', {
-            label: state.label,
-            name: state.name,
-            description: state.description,
-            shape: QuantumStates.getShapeDescription(state.l),
-            orientation: QuantumStates.getMagneticDescription(state.l, state.m)
-        });
+        if (mValue) mValue.textContent = m;
     }
     
     // 生成并显示电子云
@@ -351,10 +297,8 @@ class HydrogenVisualizationApp {
             return;
         }
         
-        // 显示加载状态
         this.showLoading('正在生成电子云数据...');
         
-        // 使用requestAnimationFrame避免阻塞UI
         requestAnimationFrame(() => {
             try {
                 const numPoints = parseInt(document.getElementById('pointDensity').value) || 3000;
@@ -363,7 +307,7 @@ class HydrogenVisualizationApp {
                 console.log(`Generating electron cloud: n=${n}, l=${l}, m=${m}, points=${numPoints}`);
                 
                 // 生成电子云数据
-                const electronData = WaveFunction.generateElectronCloudData(n, l, m, numPoints);
+                const electronData = this.generateElectronCloudData(n, l, m, numPoints);
                 
                 if (!electronData || electronData.length === 0) {
                     throw new Error('电子云数据生成失败');
@@ -377,14 +321,10 @@ class HydrogenVisualizationApp {
                 // 更新可视化
                 if (this.is3DEnabled && VisualizationEngine && VisualizationEngine.setData) {
                     VisualizationEngine.setData(filteredData, this.currentQuantumState);
-                } else if (FallbackVisualization && FallbackVisualization.setData) {
-                    FallbackVisualization.setData(filteredData, this.currentQuantumState);
                 }
                 
-                // 隐藏加载状态
                 this.hideLoading();
                 
-                // 显示成功消息
                 this.showNotification(
                     `已切换到 ${this.currentQuantumState.label} 轨道<br>` +
                     `<small>${this.currentQuantumState.description}</small>`, 
@@ -398,22 +338,106 @@ class HydrogenVisualizationApp {
         });
     }
     
+    // 生成电子云数据
+    generateElectronCloudData(n, l, m, numPoints) {
+        const data = [];
+        const maxRadius = n * 3;
+        
+        // 轨道颜色
+        const getOrbitalColor = (l, probability, x, y, z) => {
+            const orbitalColors = [
+                [100, 150, 255], // s轨道 - 蓝色
+                [100, 255, 150], // p轨道 - 绿色
+                [200, 100, 255], // d轨道 - 紫色
+                [255, 200, 100]  // f轨道 - 橙色
+            ];
+            
+            const baseColor = orbitalColors[l] || orbitalColors[0];
+            const intensity = 0.5 + probability * 0.5;
+            
+            return [
+                Math.min(255, Math.floor(baseColor[0] * intensity)),
+                Math.min(255, Math.floor(baseColor[1] * intensity)),
+                Math.min(255, Math.floor(baseColor[2] * intensity))
+            ];
+        };
+        
+        // 生成点
+        for (let i = 0; i < numPoints; i++) {
+            let x, y, z, probability;
+            
+            // 根据轨道类型生成不同分布
+            if (l === 0) { // s轨道 - 球形
+                const phi = Math.random() * Math.PI * 2;
+                const theta = Math.acos(2 * Math.random() - 1);
+                const r = Math.random() * maxRadius;
+                
+                x = r * Math.sin(theta) * Math.cos(phi);
+                y = r * Math.sin(theta) * Math.sin(phi);
+                z = r * Math.cos(theta);
+                
+                probability = Math.exp(-r / n);
+            } 
+            else if (l === 1) { // p轨道
+                const phi = Math.random() * Math.PI * 2;
+                const theta = Math.acos(2 * Math.random() - 1);
+                const r = Math.random() * maxRadius;
+                
+                x = r * Math.sin(theta) * Math.cos(phi);
+                y = r * Math.sin(theta) * Math.sin(phi);
+                z = r * Math.cos(theta);
+                
+                // p轨道的概率分布
+                if (m === 0) { // pz
+                    probability = Math.exp(-r / n) * Math.abs(Math.cos(theta));
+                } else if (m === 1) { // px
+                    probability = Math.exp(-r / n) * Math.abs(Math.sin(theta) * Math.cos(phi));
+                } else if (m === -1) { // py
+                    probability = Math.exp(-r / n) * Math.abs(Math.sin(theta) * Math.sin(phi));
+                } else {
+                    probability = Math.exp(-r / n);
+                }
+            }
+            else { // d轨道及其他
+                const phi = Math.random() * Math.PI * 2;
+                const theta = Math.acos(2 * Math.random() - 1);
+                const r = Math.random() * maxRadius;
+                
+                x = r * Math.sin(theta) * Math.cos(phi);
+                y = r * Math.sin(theta) * Math.sin(phi);
+                z = r * Math.cos(theta);
+                
+                probability = Math.exp(-r / n) * Math.pow(Math.sin(theta), 2);
+            }
+            
+            // 归一化概率
+            probability = Math.min(1, probability * 2);
+            
+            data.push({
+                x: x,
+                y: y,
+                z: z,
+                probability: probability,
+                color: getOrbitalColor(l, probability, x, y, z)
+            });
+        }
+        
+        return data;
+    }
+    
     // 模式按钮点击事件
     onModeButtonClick(event) {
         const button = event.currentTarget;
         const mode = button.dataset.mode;
         
-        // 移除所有按钮的active类
         document.querySelectorAll('.mode-btn').forEach(btn => {
             btn.classList.remove('active');
         });
         
-        // 为当前按钮添加active类
         button.classList.add('active');
         
         this.visualizationMode = mode;
         
-        // 更新可视化模式
         if (this.is3DEnabled && VisualizationEngine && VisualizationEngine.setVisualizationMode) {
             VisualizationEngine.setVisualizationMode(mode);
         }
@@ -437,11 +461,9 @@ class HydrogenVisualizationApp {
         const value = target.value;
         const id = target.id;
         
-        // 更新值显示
         switch(id) {
             case 'pointDensity':
                 document.getElementById('densityValue').textContent = value;
-                // 重新生成电子云
                 if (this.currentQuantumState) {
                     this.generateAndDisplayElectronCloud(
                         this.currentQuantumState.n,
@@ -453,7 +475,6 @@ class HydrogenVisualizationApp {
                 
             case 'probabilityCutoff':
                 document.getElementById('cutoffValue').textContent = parseFloat(value).toFixed(2);
-                // 重新生成电子云
                 if (this.currentQuantumState) {
                     this.generateAndDisplayElectronCloud(
                         this.currentQuantumState.n,
@@ -467,9 +488,6 @@ class HydrogenVisualizationApp {
                 const speed = parseFloat(value);
                 document.getElementById('speedValue').textContent = speed.toFixed(1) + 'x';
                 this.currentAnimationSpeed = speed;
-                
-                // 这里可以添加动画速度控制逻辑
-                // 注意：Three.js动画速度通常通过修改增量值实现
                 break;
         }
     }
@@ -486,15 +504,6 @@ class HydrogenVisualizationApp {
             
             if (this.is3DEnabled && VisualizationEngine && VisualizationEngine.toggleAnimation) {
                 isAnimating = VisualizationEngine.toggleAnimation();
-            } else if (FallbackVisualization) {
-                // 2D模式的动画控制
-                if (FallbackVisualization.animationId) {
-                    FallbackVisualization.stopAnimation();
-                    isAnimating = false;
-                } else {
-                    FallbackVisualization.startAnimation();
-                    isAnimating = true;
-                }
             }
             
             const button = document.getElementById('animateBtn');
@@ -525,12 +534,9 @@ class HydrogenVisualizationApp {
             
             if (this.is3DEnabled && VisualizationEngine && VisualizationEngine.captureScreenshot) {
                 screenshotUrl = VisualizationEngine.captureScreenshot();
-            } else if (FallbackVisualization && FallbackVisualization.captureScreenshot) {
-                screenshotUrl = FallbackVisualization.captureScreenshot();
             }
             
             if (screenshotUrl) {
-                // 创建下载链接
                 const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
                 const stateLabel = this.currentQuantumState ? this.currentQuantumState.label : 'unknown';
                 const filename = `hydrogen-electron-cloud-${stateLabel}-${timestamp}.png`;
@@ -563,10 +569,8 @@ class HydrogenVisualizationApp {
             const m = this.currentQuantumState.m;
             const numPoints = parseInt(document.getElementById('pointDensity').value) || 3000;
             
-            // 生成数据
-            const electronData = WaveFunction.generateElectronCloudData(n, l, m, Math.min(numPoints, 10000));
+            const electronData = this.generateElectronCloudData(n, l, m, Math.min(numPoints, 10000));
             
-            // 格式化数据为JSON
             const exportData = {
                 quantumState: this.currentQuantumState,
                 parameters: {
@@ -585,12 +589,10 @@ class HydrogenVisualizationApp {
                 }))
             };
             
-            // 创建JSON文件
             const jsonStr = JSON.stringify(exportData, null, 2);
             const blob = new Blob([jsonStr], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             
-            // 创建下载链接
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const filename = `hydrogen-data-${this.currentQuantumState.label}-${timestamp}.json`;
             
@@ -599,7 +601,6 @@ class HydrogenVisualizationApp {
             link.href = url;
             link.click();
             
-            // 清理URL
             setTimeout(() => URL.revokeObjectURL(url), 100);
             
             this.showNotification('数据已导出为 ' + filename, 'success');
@@ -621,7 +622,6 @@ class HydrogenVisualizationApp {
             if (this.is3DEnabled && VisualizationEngine && VisualizationEngine.resetView) {
                 VisualizationEngine.resetView();
             }
-            // 2D模式不需要重置视图
             
             this.showNotification('视图已重置', 'info');
         } catch (error) {
@@ -668,7 +668,6 @@ class HydrogenVisualizationApp {
         const link = event.currentTarget;
         const targetId = link.getAttribute('href').substring(1);
         
-        // 滚动到目标元素
         const targetElement = document.getElementById(targetId);
         if (targetElement) {
             targetElement.scrollIntoView({ 
@@ -677,7 +676,6 @@ class HydrogenVisualizationApp {
             });
         }
         
-        // 更新活动链接
         document.querySelectorAll('.nav-link').forEach(l => {
             l.classList.remove('active');
         });
@@ -693,7 +691,6 @@ class HydrogenVisualizationApp {
     
     // 更新UI
     updateUI() {
-        // 更新值显示
         const pointDensity = document.getElementById('pointDensity');
         const probabilityCutoff = document.getElementById('probabilityCutoff');
         const animationSpeed = document.getElementById('animationSpeed');
@@ -713,7 +710,6 @@ class HydrogenVisualizationApp {
             this.currentAnimationSpeed = speed;
         }
         
-        // 初始化模式按钮状态
         const modeButtons = document.querySelectorAll('.mode-btn');
         if (modeButtons.length > 0) {
             modeButtons[0].classList.add('active');
@@ -740,7 +736,6 @@ class HydrogenVisualizationApp {
         console.error(message);
         this.showNotification(message, 'error');
         
-        // 更新加载状态显示错误
         if (this.loadingElement) {
             this.loadingElement.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <span>${message}</span>`;
         }
@@ -748,7 +743,6 @@ class HydrogenVisualizationApp {
     
     // 显示通知
     showNotification(message, type = 'info') {
-        // 移除旧通知
         const oldNotifications = document.querySelectorAll('.notification');
         oldNotifications.forEach(notification => {
             if (notification.parentNode) {
@@ -756,7 +750,6 @@ class HydrogenVisualizationApp {
             }
         });
         
-        // 创建通知元素
         const notification = document.createElement('div');
         notification.className = `notification notification-${type}`;
         notification.innerHTML = `
@@ -767,22 +760,18 @@ class HydrogenVisualizationApp {
             <button class="notification-close"><i class="fas fa-times"></i></button>
         `;
         
-        // 添加到页面
         document.body.appendChild(notification);
         
-        // 添加关闭按钮事件
         notification.querySelector('.notification-close').addEventListener('click', () => {
             notification.remove();
         });
         
-        // 自动移除
         setTimeout(() => {
             if (notification.parentNode) {
                 notification.remove();
             }
         }, 5000);
         
-        // 保存通知引用
         this.notifications.push(notification);
     }
     
@@ -896,16 +885,10 @@ class HydrogenVisualizationApp {
     
     // 清理资源
     dispose() {
-        // 清理可视化引擎
         if (this.is3DEnabled && VisualizationEngine && VisualizationEngine.dispose) {
             VisualizationEngine.dispose();
         }
         
-        if (FallbackVisualization && FallbackVisualization.dispose) {
-            FallbackVisualization.dispose();
-        }
-        
-        // 清理通知
         this.notifications.forEach(notification => {
             if (notification.parentNode) {
                 notification.remove();
@@ -922,19 +905,6 @@ let app;
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM Content Loaded, starting app...');
-    
-    // 确保所有必需的库都已加载
-    if (typeof QuantumStates === 'undefined') {
-        console.error('QuantumStates library not loaded');
-        document.body.innerHTML = '<div style="color:white;padding:20px;text-align:center;">错误：量子态库未加载</div>';
-        return;
-    }
-    
-    if (typeof WaveFunction === 'undefined') {
-        console.error('WaveFunction library not loaded');
-        document.body.innerHTML = '<div style="color:white;padding:20px;text-align:center;">错误：波函数库未加载</div>';
-        return;
-    }
     
     try {
         app = new HydrogenVisualizationApp();
