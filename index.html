@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>氢原子电子云可视化 | Hydrogen Atom Electron Cloud</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fas fa-atom"></i>
+                <span>氢原子电子云可视化</span>
+            </div>
+            <div class="nav-links">
+                <a href="#home" class="nav-link active">首页</a>
+                <a href="#visualization" class="nav-link">可视化</a>
+                <a href="#theory" class="nav-link">理论背景</a>
+                <a href="#about" class="nav-link">关于</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容区 -->
+    <main class="main-content" id="home">
+        <!-- 标题区域 -->
+        <section class="hero-section">
+            <div class="hero-content">
+                <h1>氢原子电子云可视化</h1>
+                <p class="subtitle">基于量子力学波函数的三维概率密度分布模拟</p>
+                <p class="description">探索量子世界中电子在不同能级和轨道上的概率分布形态</p>
+                <a href="#visualization" class="cta-button">开始探索 <i class="fas fa-arrow-down"></i></a>
+            </div>
+            <div class="hero-visual">
+                <div class="atom-preview">
+                    <div class="nucleus"></div>
+                    <div class="electron-orbit orbit-1"></div>
+                    <div class="electron-orbit orbit-2"></div>
+                    <div class="electron-orbit orbit-3"></div>
+                    <div class="electron electron-1"></div>
+                    <div class="electron electron-2"></div>
+                    <div class="electron electron-3"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 可视化主区域 -->
+        <section class="visualization-section" id="visualization">
+            <h2 class="section-title">电子云三维可视化</h2>
+            
+            <div class="visualization-container">
+                <!-- 3D可视化区域 -->
+                <div class="canvas-container">
+                    <canvas id="electronCanvas"></canvas>
+                    <div class="canvas-overlay">
+                        <div class="loading-overlay" id="loadingText">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <span>正在初始化可视化引擎...</span>
+                        </div>
+                        <div class="canvas-controls">
+                            <button class="control-btn" id="rotateBtn" title="旋转视图">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                            <button class="control-btn" id="zoomInBtn" title="放大">
+                                <i class="fas fa-search-plus"></i>
+                            </button>
+                            <button class="control-btn" id="zoomOutBtn" title="缩小">
+                                <i class="fas fa-search-minus"></i>
+                            </button>
+                            <button class="control-btn" id="resetViewBtn" title="重置视图">
+                                <i class="fas fa-expand-arrows-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 控制面板 -->
+                <div class="control-panel">
+                    <!-- 量子态选择 -->
+                    <div class="control-group">
+                        <h3><i class="fas fa-layer-group"></i> 量子态选择</h3>
+                        <div class="quantum-state-selector">
+                            <select id="quantumState" class="state-select">
+                                <option value="" disabled selected>请选择量子态</option>
+                                <!-- 选项将通过JavaScript动态生成 -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 量子数显示 -->
+                    <div class="control-group">
+                        <h3><i class="fas fa-hashtag"></i> 量子数</h3>
+                        <div class="quantum-numbers-display">
+                            <div class="quantum-number">
+                                <div class="quantum-label">主量子数 (n)</div>
+                                <div class="quantum-value" id="nValue">1</div>
+                                <div class="quantum-description">能级/壳层</div>
+                            </div>
+                            <div class="quantum-number">
+                                <div class="quantum-label">角量子数 (l)</div>
+                                <div class="quantum-value" id="lValue">0</div>
+                                <div class="quantum-description">轨道形状</div>
+                            </div>
+                            <div class="quantum-number">
+                                <div class="quantum-label">磁量子数 (m)</div>
+                                <div class="quantum-value" id="mValue">0</div>
+                                <div class="quantum-description">空间取向</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 可视化参数 -->
+                    <div class="control-group">
+                        <h3><i class="fas fa-sliders-h"></i> 可视化参数</h3>
+                        
+                        <div class="parameter-control">
+                            <label for="visualizationMode">可视化模式:</label>
+                            <div class="mode-selector">
+                                <button class="mode-btn active" data-mode="points">点状云</button>
+                                <button class="mode-btn" data-mode="density">密度图</button>
+                                <button class="mode-btn" data-mode="surface">等值面</button>
+                            </div>
+                        </div>
+
+                        <div class="parameter-control">
+                            <label for="pointDensity">
+                                <span>点密度:</span>
+                                <span id="densityValue" class="value-display">3000</span>
+                            </label>
+                            <input type="range" id="pointDensity" min="500" max="10000" step="500" value="3000">
+                        </div>
+
+                        <div class="parameter-control">
+                            <label for="probabilityCutoff">
+                                <span>概率阈值:</span>
+                                <span id="cutoffValue" class="value-display">0.05</span>
+                            </label>
+                            <input type="range" id="probabilityCutoff" min="0.01" max="0.5" step="0.01" value="0.05">
+                        </div>
+
+                        <div class="parameter-control">
+                            <label for="animationSpeed">
+                                <span>动画速度:</span>
+                                <span id="speedValue" class="value-display">1.0x</span>
+                            </label>
+                            <input type="range" id="animationSpeed" min="0" max="2" step="0.1" value="1">
+                        </div>
+                    </div>
+
+                    <!-- 控制按钮 -->
+                    <div class="control-buttons">
+                        <button class="btn-primary" id="animateBtn">
+                            <i class="fas fa-play"></i> 开始动画
+                        </button>
+                        <button class="btn-secondary" id="screenshotBtn">
+                            <i class="fas fa-camera"></i> 截图
+                        </button>
+                        <button class="btn-secondary" id="exportDataBtn">
+                            <i class="fas fa-download"></i> 导出数据
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 理论背景 -->
+        <section class="theory-section" id="theory">
+            <h2 class="section-title">量子力学基础</h2>
+            
+            <div class="theory-content">
+                <div class="theory-card">
+                    <div class="theory-icon">
+                        <i class="fas fa-wave-square"></i>
+                    </div>
+                    <h3>波函数与薛定谔方程</h3>
+                    <p>氢原子中电子的行为由薛定谔方程描述，其解为波函数Ψ(n,l,m)。波函数的模平方|Ψ|²表示在空间某点找到电子的概率密度。</p>
+                </div>
+                
+                <div class="theory-card">
+                    <div class="theory-icon">
+                        <i class="fas fa-project-diagram"></i>
+                    </div>
+                    <h3>量子数</h3>
+                    <ul>
+                        <li><strong>主量子数 n</strong>: 决定能级和电子离核平均距离</li>
+                        <li><strong>角量子数 l</strong>: 决定轨道角动量和形状 (s,p,d,f)</li>
+                        <li><strong>磁量子数 m</strong>: 决定轨道空间取向</li>
+                        <li><strong>自旋量子数 s</strong>: 电子自旋方向</li>
+                    </ul>
+                </div>
+                
+                <div class="theory-card">
+                    <div class="theory-icon">
+                        <i class="fas fa-shapes"></i>
+                    </div>
+                    <h3>轨道形状</h3>
+                    <p>不同的(l,m)组合产生不同的电子云形状：</p>
+                    <ul>
+                        <li><strong>s轨道 (l=0)</strong>: 球形对称</li>
+                        <li><strong>p轨道 (l=1)</strong>: 哑铃形，三个空间方向</li>
+                        <li><strong>d轨道 (l=2)</strong>: 花瓣形，五种不同形状</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- 关于 -->
+        <section class="about-section" id="about">
+            <h2 class="section-title">关于本项目</h2>
+            <div class="about-content">
+                <p>本可视化项目是量子力学数值仿真模拟作业的一部分，旨在通过交互式三维可视化帮助理解氢原子电子云的量子力学性质。</p>
+                
+                <div class="features">
+                    <div class="feature">
+                        <i class="fas fa-code"></i>
+                        <h4>技术栈</h4>
+                        <p>HTML5, CSS3, JavaScript, WebGL</p>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-calculator"></i>
+                        <h4>科学计算</h4>
+                        <p>基于氢原子波函数解析解</p>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-graduation-cap"></i>
+                        <h4>教育用途</h4>
+                        <p>适用于量子力学教学与学习</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-info">
+                <h3>氢原子电子云可视化</h3>
+                <p>量子力学数值仿真模拟作业</p>
+                <p>© 2023 - 物理仿真实验室</p>
+            </div>
+            <div class="footer-links">
+                <a href="#"><i class="fab fa-github"></i> GitHub</a>
+                <a href="#"><i class="fas fa-file-pdf"></i> 文档</a>
+                <a href="#"><i class="fas fa-envelope"></i> 联系</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript文件 -->
+    <script src="js/quantumStates.js"></script>
+    <script src="js/visualization.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
