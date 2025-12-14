@@ -1126,3 +1126,19 @@ input[type="range"]::-moz-range-thumb {
         padding-top: 2rem;
     }
 }
+
+/* 在现有的style.css末尾添加以下内容 */
+
+/* 修复label警告 */
+.parameter-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.8rem;
+    color: var(--text-primary);
+    font-weight: 500;
+    font-size: 1.1rem;
+}
+
+/* 修复CSS文件路径引用 */
+/* 注意：在index.html中我们已经更正了链接：href="css/style.css" */
