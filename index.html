@@ -10,7 +10,7 @@
     <!-- 引入Font Awesome图标 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <!-- 引入自定义CSS -->
-    <link rel="stylesheet" href="ccs/style.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <!-- 导航栏 -->
@@ -90,7 +90,20 @@
                         <div class="quantum-state-selector">
                             <select id="quantumState" class="state-select">
                                 <option value="" disabled selected>请选择量子态</option>
-                                <!-- 选项将通过JavaScript动态生成 -->
+                                <optgroup label="n = 1 (主量子数)">
+                                    <option value="1,0,0">1s - 基态，球形对称</option>
+                                </optgroup>
+                                <optgroup label="n = 2 (主量子数)">
+                                    <option value="2,0,0">2s - 第一激发态，球形对称</option>
+                                    <option value="2,1,0">2pz - 哑铃形，沿z轴</option>
+                                    <option value="2,1,1">2px - 哑铃形，沿x轴</option>
+                                    <option value="2,1,-1">2py - 哑铃形，沿y轴</option>
+                                </optgroup>
+                                <optgroup label="n = 3 (主量子数)">
+                                    <option value="3,0,0">3s - 球形对称，有径向节面</option>
+                                    <option value="3,1,0">3pz - 哑铃形，有径向节面</option>
+                                    <option value="3,2,0">3dz² - 花瓣形，沿z轴</option>
+                                </optgroup>
                             </select>
                         </div>
                     </div>
@@ -106,7 +119,7 @@
                             </div>
                             <div class="quantum-number">
                                 <div class="quantum-label">角量子数 (l)</div>
-                                <div class="quantum-value" id="lValue">0</div>
+                                <div class="quantum-value" id="lValue">0 (s)</div>
                                 <div class="quantum-description">轨道形状</div>
                             </div>
                             <div class="quantum-number">
@@ -122,7 +135,7 @@
                         <h3><i class="fas fa-sliders-h"></i> 可视化参数</h3>
                         
                         <div class="parameter-control">
-                            <label for="visualizationMode">可视化模式:</label>
+                            <span class="parameter-label">可视化模式:</span>
                             <div class="mode-selector">
                                 <button class="mode-btn active" data-mode="points">点状云</button>
                                 <button class="mode-btn" data-mode="density">密度图</button>
@@ -251,7 +264,6 @@
 
     <!-- JavaScript文件 -->
     <script src="js/quantumStates.js"></script>
-    <script src="js/fallbackVisualization.js"></script>
     <script src="js/visualization.js"></script>
     <script src="js/main.js"></script>
 </body>
