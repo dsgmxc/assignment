@@ -160,86 +160,121 @@ const WaveFunction = {
     },
     
     // 生成电子云数据点
-    // 生成电子云数据点
-generateElectronCloudData(n, l, m, numPoints) {
-    const data = [];
-    
-    // 根据量子态调整半径范围
-    const maxRadius = n * 2; // 以n为单位的半径范围
-    
-    for (let i = 0; i < numPoints; i++) {
-        // 生成随机球坐标（根据量子态调整分布）
-        let r, theta, phi;
+    generateElectronCloudData(n, l, m, numPoints) {
+        const data = [];
         
-        // 不同量子态有不同的分布特性
-        if (l === 0) { // s轨道 - 球对称
-            r = Math.pow(Math.random(), 1/3) * maxRadius;
-            theta = Math.acos(2 * Math.random() - 1);
-            phi = 2 * Math.PI * Math.random();
-        } else if (l === 1) { // p轨道
-            r = Math.pow(Math.random(), 1/3) * maxRadius;
-            theta = Math.acos(2 * Math.random() - 1);
-            phi = 2 * Math.PI * Math.random();
+        // 根据量子态调整半径范围
+        const maxRadius = n * 2; // 以n为单位的半径范围
+        
+        for (let i = 0; i < numPoints; i++) {
+            // 生成随机球坐标（根据量子态调整分布）
+            let r, theta, phi;
             
-            // p轨道有方向性
-            if (m === 0) { // pz - 沿z轴
-                // 增强z方向分布
-                theta = Math.acos(Math.pow(Math.random(), 0.5) * 2 - 1);
-            } else if (m === 1) { // px - 沿x轴
-                phi = 0; // 主要沿x轴
-            } else if (m === -1) { // py - 沿y轴
-                phi = Math.PI / 2; // 主要沿y轴
+            // 不同量子态有不同的分布特性
+            if (l === 0) { // s轨道 - 球对称
+                r = Math.pow(Math.random(), 1/3) * maxRadius;
+                theta = Math.acos(2 * Math.random() - 1);
+                phi = 2 * Math.PI * Math.random();
+            } else if (l === 1) { // p轨道
+                r = Math.pow(Math.random(), 1/3) * maxRadius;
+                theta = Math.acos(2 * Math.random() - 1);
+                phi = 2 * Math.PI * Math.random();
+                
+                // p轨道有方向性
+                if (m === 0) { // pz - 沿z轴
+                    // 增强z方向分布
+                    theta = Math.acos(Math.pow(Math.random(), 0.5) * 2 - 1);
+                } else if (m === 1) { // px - 沿x轴
+                    phi = 0; // 主要沿x轴
+                } else if (m === -1) { // py - 沿y轴
+                    phi = Math.PI / 2; // 主要沿y轴
+                }
+            } else if (l === 2) { // d轨道
+                r = Math.pow(Math.random(), 1/3) * maxRadius;
+                theta = Math.acos(2 * Math.random() - 1);
+                phi = 2 * Math.PI * Math.random();
+                
+                // d轨道有更复杂的分布
+                if (m === 0) { // dz²
+                    // 沿z轴的双峰分布
+                    theta = Math.acos(Math.pow(Math.random(), 0.3) * 2 - 1);
+                }
+                // 其他d轨道的分布可以类似调整
             }
-        } else if (l === 2) { // d轨道
-            r = Math.pow(Math.random(), 1/3) * maxRadius;
-            theta = Math.acos(2 * Math.random() - 1);
-            phi = 2 * Math.PI * Math.random();
             
-            // d轨道有更复杂的分布
-            if (m === 0) { // dz²
-                // 沿z轴的双峰分布
-                theta = Math.acos(Math.pow(Math.random(), 0.3) * 2 - 1);
+            // 转换为直角坐标
+            const x = r * Math.sin(theta) * Math.cos(phi);
+            const y = r * Math.sin(theta) * Math.sin(phi);
+            const z = r * Math.cos(theta);
+            
+            // 计算概率密度（简化模型）
+            let probability = 0;
+            
+            // 径向部分
+            const radialProbability = Math.exp(-r / n) * Math.pow(r, 2*l);
+            
+            // 角度部分
+            let angularProbability = 1;
+            if (l === 1) {
+                if (m === 0) angularProbability = Math.abs(Math.cos(theta));
+                else angularProbability = Math.abs(Math.sin(theta));
+            } else if (l === 2) {
+                if (m === 0) angularProbability = Math.abs(3*Math.cos(theta)*Math.cos(theta) - 1);
+                else if (Math.abs(m) === 1) angularProbability = Math.abs(Math.sin(theta)*Math.cos(theta));
+                else angularProbability = Math.abs(Math.sin(theta)*Math.sin(theta));
             }
-            // 其他d轨道的分布可以类似调整
+            
+            probability = radialProbability * angularProbability;
+            
+            // 归一化
+            probability = Math.min(1, probability * 10);
+            
+            // 基于概率和量子态设置颜色
+            const colorIntensity = Math.min(1, probability * 2);
+            let color;
+            
+            switch(l) {
+                case 0: // s轨道 - 蓝色系
+                    color = [
+                        Math.floor(100 + colorIntensity * 155),
+                        Math.floor(150 + colorIntensity * 105),
+                        255
+                    ];
+                    break;
+                case 1: // p轨道 - 绿色系
+                    color = [
+                        Math.floor(100 + colorIntensity * 155),
+                        255,
+                        Math.floor(150 + colorIntensity * 105)
+                    ];
+                    break;
+                case 2: // d轨道 - 紫色系
+                    color = [
+                        Math.floor(200 + colorIntensity * 55),
+                        Math.floor(100 + colorIntensity * 155),
+                        255
+                    ];
+                    break;
+                default: // 其他轨道 - 青色系
+                    color = [
+                        Math.floor(100 + colorIntensity * 155),
+                        255,
+                        255
+                    ];
+            }
+            
+            data.push({
+                x: x,
+                y: y,
+                z: z,
+                probability: probability,
+                color: color
+            });
         }
         
-        // 转换为直角坐标
-        const x = r * Math.sin(theta) * Math.cos(phi);
-        const y = r * Math.sin(theta) * Math.sin(phi);
-        const z = r * Math.cos(theta);
-        
-        // 计算概率密度（简化模型）
-        let probability = 0;
-        
-        // 径向部分
-        const radialProbability = Math.exp(-r / n) * Math.pow(r, 2*l);
-        
-        // 角度部分
-        let angularProbability = 1;
-        if (l === 1) {
-            if (m === 0) angularProbability = Math.abs(Math.cos(theta));
-            else angularProbability = Math.abs(Math.sin(theta));
-        } else if (l === 2) {
-            if (m === 0) angularProbability = Math.abs(3*Math.cos(theta)*Math.cos(theta) - 1);
-            else if (Math.abs(m) === 1) angularProbability = Math.abs(Math.sin(theta)*Math.cos(theta));
-            else angularProbability = Math.abs(Math.sin(theta)*Math.sin(theta));
-        }
-        
-        probability = radialProbability * angularProbability;
-        
-        // 归一化
-        probability = Math.min(1, probability * 10);
-        
-        // 基于概率和量子态设置颜色
-        const colorIntensity = Math.min(1, probability * 2);
-        let color;
-        
-        switch(l) {
-            case 0: // s轨道 - 蓝色系
-                color = [
-                    Math.floor(100 + colorIntensity * 155),
-                    Math.floor(150 + colorIntensity * 105),
-                    255
+        return data;
+    }
+};
 
 // 导出到全局作用域
 window.QuantumStates = QuantumStates;
