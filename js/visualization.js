@@ -18,7 +18,6 @@ const VisualizationEngine = {
     currentData: null,
     currentState: null,
     pointsCount: 3000,
-    orbitControlsAvailable: false,
     
     // 初始化Three.js场景
     init(canvasId) {
@@ -28,7 +27,6 @@ const VisualizationEngine = {
             // 检查Three.js是否已加载
             if (typeof THREE === 'undefined') {
                 console.error('Three.js is not loaded');
-                this.showFallbackMessage(canvasId, 'Three.js库未加载');
                 return false;
             }
             
@@ -43,14 +41,14 @@ const VisualizationEngine = {
             // 创建Three.js场景
             this.scene = new THREE.Scene();
             this.scene.background = new THREE.Color(0x0f172a);
+            this.scene.fog = new THREE.Fog(0x0f172a, 10, 50);
             
             // 创建相机
             const width = canvas.clientWidth;
             const height = canvas.clientHeight;
-            console.log(`Canvas尺寸: ${width}x${height}`);
             
             this.camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
-            this.camera.position.set(15, 15, 15);
+            this.camera.position.set(0, 0, 20);
             this.camera.lookAt(0, 0, 0);
             
             // 创建渲染器
@@ -63,26 +61,9 @@ const VisualizationEngine = {
             this.renderer.setSize(width, height, false);
             this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             this.renderer.shadowMap.enabled = false;
+            this.renderer.outputEncoding = THREE.sRGBEncoding;
             
             console.log('Renderer created');
-            
-            // 检查OrbitControls是否可用
-            if (typeof THREE.OrbitControls !== 'undefined') {
-                try {
-                    this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
-                    this.controls.enableDamping = true;
-                    this.controls.dampingFactor = 0.05;
-                    this.controls.rotateSpeed = 0.5;
-                    this.controls.minDistance = 5;
-                    this.controls.maxDistance = 100;
-                    this.orbitControlsAvailable = true;
-                    console.log('OrbitControls initialized');
-                } catch (controlsError) {
-                    console.warn('OrbitControls failed to initialize:', controlsError);
-                }
-            } else {
-                console.warn('OrbitControls not available');
-            }
             
             // 添加光源
             this.addLights();
@@ -108,56 +89,31 @@ const VisualizationEngine = {
             return true;
         } catch (error) {
             console.error('初始化Three.js失败:', error);
-            
-            // 提供降级方案
-            this.showFallbackMessage(canvasId, '3D引擎初始化失败: ' + error.message);
-            
             return false;
         }
-    },
-    
-    // 显示降级消息
-    showFallbackMessage(canvasId, message) {
-        const canvas = document.getElementById(canvasId);
-        if (!canvas) return;
-        
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-        
-        // 设置画布大小
-        canvas.width = canvas.clientWidth;
-        canvas.height = canvas.clientHeight;
-        
-        // 绘制错误消息
-        ctx.fillStyle = '#1e293b';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        ctx.fillStyle = '#ef4444';
-        ctx.font = 'bold 20px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('3D可视化不可用', canvas.width/2, canvas.height/2 - 30);
-        
-        ctx.fillStyle = '#3b82f6';
-        ctx.font = '16px Arial';
-        ctx.fillText(message, canvas.width/2, canvas.height/2);
     },
     
     // 添加光源
     addLights() {
         // 环境光
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         this.scene.add(ambientLight);
         
         // 平行光
         this.directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
         this.directionalLight.position.set(10, 10, 10);
+        this.directionalLight.castShadow = true;
         this.scene.add(this.directionalLight);
         
         // 点光源（模拟原子核发光）
-        this.pointLight = new THREE.PointLight(0xff4444, 1, 50);
+        this.pointLight = new THREE.PointLight(0xff4444, 2, 100);
         this.pointLight.position.set(0, 0, 0);
         this.scene.add(this.pointLight);
+        
+        // 辅助光
+        const fillLight = new THREE.DirectionalLight(0x6666ff, 0.3);
+        fillLight.position.set(-10, -10, -10);
+        this.scene.add(fillLight);
     },
     
     // 添加坐标轴
@@ -168,7 +124,7 @@ const VisualizationEngine = {
         this.scene.add(this.axesHelper);
         
         // 添加网格
-        const gridHelper = new THREE.GridHelper(20, 20);
+        const gridHelper = new THREE.GridHelper(30, 30, 0x444444, 0x222222);
         gridHelper.position.y = -0.01;
         this.scene.add(gridHelper);
     },
@@ -176,25 +132,26 @@ const VisualizationEngine = {
     // 添加原子核
     addNucleus() {
         // 原子核几何体
-        const geometry = new THREE.SphereGeometry(0.3, 32, 32);
+        const geometry = new THREE.SphereGeometry(0.5, 32, 32);
         
         // 原子核材质
         const material = new THREE.MeshPhongMaterial({
             color: 0xff4444,
             emissive: 0xff0000,
-            emissiveIntensity: 0.3,
-            shininess: 100
+            emissiveIntensity: 0.5,
+            shininess: 100,
+            specular: 0xff6666
         });
         
         this.nucleus = new THREE.Mesh(geometry, material);
         this.scene.add(this.nucleus);
         
         // 添加原子核发光光晕
-        const glowGeometry = new THREE.SphereGeometry(0.5, 32, 32);
+        const glowGeometry = new THREE.SphereGeometry(0.7, 32, 32);
         const glowMaterial = new THREE.MeshBasicMaterial({
             color: 0xff4444,
             transparent: true,
-            opacity: 0.2
+            opacity: 0.3
         });
         const glow = new THREE.Mesh(glowGeometry, glowMaterial);
         this.nucleus.add(glow);
@@ -213,27 +170,22 @@ const VisualizationEngine = {
             if (this.electronCloud.material) {
                 this.electronCloud.material.dispose();
             }
-            console.log('已移除旧电子云');
         }
         
         this.pointsCount = pointCount;
         
         // 创建点云几何体
         const geometry = new THREE.BufferGeometry();
-        
-        // 创建位置数组
         const positions = new Float32Array(pointCount * 3);
-        
-        // 创建颜色数组
         const colors = new Float32Array(pointCount * 3);
         
         // 初始填充随机位置和颜色
         for (let i = 0; i < pointCount; i++) {
             const i3 = i * 3;
             // 初始位置在原点附近
-            positions[i3] = (Math.random() - 0.5) * 2;
-            positions[i3 + 1] = (Math.random() - 0.5) * 2;
-            positions[i3 + 2] = (Math.random() - 0.5) * 2;
+            positions[i3] = (Math.random() - 0.5) * 10;
+            positions[i3 + 1] = (Math.random() - 0.5) * 10;
+            positions[i3 + 2] = (Math.random() - 0.5) * 10;
             
             // 初始颜色（蓝色）
             colors[i3] = 0.4;
@@ -251,7 +203,8 @@ const VisualizationEngine = {
             transparent: true,
             opacity: 0.8,
             blending: THREE.AdditiveBlending,
-            sizeAttenuation: true
+            sizeAttenuation: true,
+            depthWrite: false
         });
         
         // 创建点云对象
@@ -261,18 +214,14 @@ const VisualizationEngine = {
         console.log('电子云创建完成');
     },
     
-    // 更新电子云数据 - 修复版
+    // 更新电子云数据
     updateElectronCloud(data, state) {
         if (!this.electronCloud || !data || data.length === 0) {
             console.warn('无法更新电子云：无数据或电子云未创建');
-            if (data) {
-                console.log(`传入数据长度: ${data.length}`);
-            }
             return;
         }
         
         console.log(`更新电子云数据，点数: ${data.length}`);
-        console.log('第一个点:', data[0]);
         
         const geometry = this.electronCloud.geometry;
         const positions = geometry.attributes.position.array;
@@ -290,7 +239,7 @@ const VisualizationEngine = {
         }
         
         const maxRange = Math.max(maxX, maxY, maxZ);
-        const scale = maxRange > 0 ? 10 / maxRange : 1;
+        const scale = maxRange > 0 ? 8 / maxRange : 1;
         
         console.log(`数据范围: x:${maxX.toFixed(2)}, y:${maxY.toFixed(2)}, z:${maxZ.toFixed(2)}, 缩放因子: ${scale.toFixed(2)}`);
         
@@ -305,7 +254,7 @@ const VisualizationEngine = {
             
             // 基于概率更新颜色
             const probability = point.probability || 0;
-            const intensity = Math.min(1, probability * 2);
+            const intensity = Math.min(1, probability * 3);
             
             // 使用数据中的颜色或根据量子态设置颜色
             if (point.color) {
@@ -382,16 +331,10 @@ const VisualizationEngine = {
         
         // 根据主量子数调整相机距离
         const baseDistance = 15;
-        const distance = baseDistance + (n - 1) * 5;
+        const distance = baseDistance + (n - 1) * 3;
         
-        if (this.orbitControlsAvailable && this.controls) {
-            this.controls.target.set(0, 0, 0);
-            this.camera.position.set(distance, distance, distance);
-            this.controls.update();
-        } else {
-            this.camera.position.set(distance, distance, distance);
-            this.camera.lookAt(0, 0, 0);
-        }
+        this.camera.position.set(0, 0, distance);
+        this.camera.lookAt(0, 0, 0);
         
         console.log(`调整视图: n=${n}, 相机距离=${distance.toFixed(1)}`);
     },
@@ -403,15 +346,9 @@ const VisualizationEngine = {
         // 请求下一帧
         this.animationFrameId = requestAnimationFrame(() => this.animate());
         
-        // 更新控制器
-        if (this.controls) {
-            this.controls.update();
-        }
-        
         // 旋转电子云（如果动画开启）
         if (this.isAnimating && this.electronCloud && this.electronCloud.visible) {
-            this.electronCloud.rotation.y += 0.002;
-            this.electronCloud.rotation.x += 0.001;
+            this.electronCloud.rotation.y += 0.005;
         }
         
         // 原子核脉动效果
@@ -449,16 +386,13 @@ const VisualizationEngine = {
     
     // 重置视图
     resetView() {
-        if (this.controls) {
-            this.controls.reset();
-        }
-        
         // 重置相机位置
-        this.camera.position.set(15, 15, 15);
+        this.camera.position.set(0, 0, 20);
         this.camera.lookAt(0, 0, 0);
         
-        if (this.controls) {
-            this.controls.update();
+        // 重置电子云旋转
+        if (this.electronCloud) {
+            this.electronCloud.rotation.set(0, 0, 0);
         }
         
         console.log('视图已重置');
@@ -470,11 +404,11 @@ const VisualizationEngine = {
         
         switch(mode) {
             case 'points':
-                this.electronCloud.material.size = 0.2;
+                this.electronCloud.material.size = 0.15;
                 this.electronCloud.material.opacity = 0.8;
                 break;
             case 'density':
-                this.electronCloud.material.size = 0.3;
+                this.electronCloud.material.size = 0.25;
                 this.electronCloud.material.opacity = 0.6;
                 break;
             case 'surface':
@@ -508,10 +442,6 @@ const VisualizationEngine = {
         if (this.animationFrameId) {
             cancelAnimationFrame(this.animationFrameId);
             this.animationFrameId = null;
-        }
-        
-        if (this.controls) {
-            this.controls.dispose();
         }
         
         if (this.renderer) {
