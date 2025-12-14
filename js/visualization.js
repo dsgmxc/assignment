@@ -19,13 +19,21 @@ const VisualizationEngine = {
     
     // 初始化Three.js场景
     init(canvasId) {
-        const canvas = document.getElementById(canvasId);
-        if (!canvas) {
-            console.error(`Canvas element with id "${canvasId}" not found.`);
-            return false;
-        }
-        
         try {
+            // 检查Three.js是否已加载
+            if (typeof THREE === 'undefined') {
+                console.error('Three.js is not loaded');
+                return false;
+            }
+            
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) {
+                console.error(`Canvas element with id "${canvasId}" not found.`);
+                return false;
+            }
+            
+            console.log('Initializing Three.js...');
+            
             // 创建Three.js场景
             this.scene = new THREE.Scene();
             this.scene.background = new THREE.Color(0x0f172a);
@@ -34,7 +42,7 @@ const VisualizationEngine = {
             const width = canvas.clientWidth;
             const height = canvas.clientHeight;
             this.camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-            this.camera.position.set(5, 5, 5);
+            this.camera.position.set(8, 8, 8);
             this.camera.lookAt(0, 0, 0);
             
             // 创建渲染器
@@ -43,14 +51,20 @@ const VisualizationEngine = {
                 antialias: true,
                 alpha: true
             });
-            this.renderer.setSize(width, height);
+            this.renderer.setSize(width, height, false);
             this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             
-            // 添加轨道控制器
-            this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
-            this.controls.enableDamping = true;
-            this.controls.dampingFactor = 0.05;
-            this.controls.rotateSpeed = 0.5;
+            // 检查OrbitControls是否可用
+            if (typeof THREE.OrbitControls === 'function') {
+                this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+                this.controls.enableDamping = true;
+                this.controls.dampingFactor = 0.05;
+                this.controls.rotateSpeed = 0.5;
+            } else {
+                console.warn('OrbitControls not available, using basic controls');
+                // 创建简单的鼠标控制
+                this.setupBasicControls();
+            }
             
             // 添加光源
             this.addLights();
@@ -61,23 +75,76 @@ const VisualizationEngine = {
             // 添加原子核
             this.addNucleus();
             
-            // 添加电子云（初始为空）
+            // 创建初始电子云
             this.createElectronCloud(this.pointsCount);
             
             // 处理窗口大小变化
             window.addEventListener('resize', () => this.onWindowResize());
             
-            this.isInitialized = true;
-            console.log('Three.js visualization engine initialized.');
-            
             // 开始动画循环
             this.animate();
+            
+            this.isInitialized = true;
+            console.log('Three.js visualization engine initialized successfully.');
             
             return true;
         } catch (error) {
             console.error('Failed to initialize Three.js:', error);
+            
+            // 提供降级方案
+            const canvas = document.getElementById(canvasId);
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    ctx.fillStyle = '#1e293b';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = '#3b82f6';
+                    ctx.font = '20px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Three.js初始化失败', canvas.width/2, canvas.height/2);
+                    ctx.font = '16px Arial';
+                    ctx.fillText('请确保Three.js库已正确加载', canvas.width/2, canvas.height/2 + 30);
+                }
+            }
+            
             return false;
         }
+    },
+    
+    // 设置基本控制（如果OrbitControls不可用）
+    setupBasicControls() {
+        const canvas = this.renderer.domElement;
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            previousMousePosition = { x: e.clientX, y: e.clientY };
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            
+            const deltaX = e.clientX - previousMousePosition.x;
+            const deltaY = e.clientY - previousMousePosition.y;
+            
+            // 旋转相机
+            this.camera.position.x -= deltaX * 0.01;
+            this.camera.position.y += deltaY * 0.01;
+            this.camera.lookAt(0, 0, 0);
+            
+            previousMousePosition = { x: e.clientX, y: e.clientY };
+        });
+        
+        canvas.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+        
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
+            this.camera.position.multiplyScalar(zoomFactor);
+        });
     },
     
     // 添加光源
