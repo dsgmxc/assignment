@@ -181,8 +181,8 @@
             flex-wrap: wrap;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 6rem;
-            padding: 4rem 0;
+            margin-bottom: 4rem;
+            padding: 2rem 0;
             gap: 4rem;
         }
 
@@ -376,39 +376,34 @@
             transform: translateX(-50%);
         }
 
-        /* 可视化区域 */
+        /* 可视化区域 - 修复布局 */
         .visualization-section {
-            margin-bottom: 6rem;
-        }
-
-        .visualization-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 2rem;
             margin-bottom: 4rem;
         }
 
-        .canvas-container {
-            flex: 3;
-            min-width: 300px;
+        .visualization-container {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 2rem;
+            margin-bottom: 2rem;
             min-height: 600px;
-            height: 600px;
+        }
+
+        .canvas-wrapper {
+            position: relative;
             background-color: var(--background-light);
             border-radius: var(--border-radius);
             overflow: hidden;
-            position: relative;
             box-shadow: var(--shadow-xl);
             border: 1px solid var(--border-color);
+            min-height: 600px;
         }
 
         #electronCanvas {
             width: 100%;
-            height: 100%;
+            height: 600px;
             display: block;
             outline: none;
-            position: absolute;
-            top: 0;
-            left: 0;
         }
 
         .canvas-overlay {
@@ -428,7 +423,7 @@
             background-color: rgba(15, 23, 42, 0.95);
             padding: 2rem 3rem;
             border-radius: var(--border-radius);
-            display: flex;
+            display: none;
             flex-direction: column;
             align-items: center;
             gap: 20px;
@@ -452,7 +447,7 @@
 
         .canvas-controls {
             position: absolute;
-            bottom: 20px;
+            top: 20px;
             right: 20px;
             display: flex;
             flex-direction: column;
@@ -505,20 +500,22 @@
             z-index: 100;
         }
 
-        /* 控制面板 */
+        /* 控制面板 - 固定位置 */
         .control-panel {
-            flex: 1;
-            min-width: 350px;
             background-color: var(--background-light);
             border-radius: var(--border-radius);
-            padding: 2.5rem;
+            padding: 2rem;
             box-shadow: var(--shadow-xl);
             border: 1px solid var(--border-color);
             height: fit-content;
+            position: sticky;
+            top: 100px;
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
         }
 
         .control-group {
-            margin-bottom: 2.5rem;
+            margin-bottom: 2rem;
             padding-bottom: 1.5rem;
             border-bottom: 1px solid var(--border-color);
         }
@@ -584,13 +581,13 @@
         .quantum-numbers-display {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 1.5rem;
+            gap: 1rem;
         }
 
         .quantum-number {
             background-color: rgba(15, 23, 42, 0.7);
             border-radius: var(--border-radius);
-            padding: 1.5rem 1rem;
+            padding: 1rem 0.5rem;
             text-align: center;
             transition: var(--transition);
             border: 1px solid transparent;
@@ -604,7 +601,7 @@
         }
 
         .quantum-label {
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             color: var(--text-secondary);
             margin-bottom: 0.5rem;
             font-weight: 500;
@@ -613,7 +610,7 @@
         }
 
         .quantum-value {
-            font-size: 2.8rem;
+            font-size: 2rem;
             font-weight: 800;
             color: var(--primary-color);
             margin-bottom: 0.5rem;
@@ -621,14 +618,14 @@
         }
 
         .quantum-description {
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             color: var(--text-secondary);
             opacity: 0.8;
         }
 
         /* 参数控制 */
         .parameter-control {
-            margin-bottom: 1.8rem;
+            margin-bottom: 1.5rem;
         }
 
         .parameter-control:last-child {
@@ -642,13 +639,13 @@
             margin-bottom: 0.8rem;
             color: var(--text-primary);
             font-weight: 500;
-            font-size: 1.1rem;
+            font-size: 1rem;
         }
 
         .value-display {
             color: var(--primary-color);
             font-weight: 600;
-            font-size: 1.1rem;
+            font-size: 1rem;
             min-width: 60px;
             text-align: right;
         }
@@ -704,7 +701,7 @@
 
         .mode-btn {
             flex: 1;
-            padding: 1rem 0.5rem;
+            padding: 0.8rem 0.5rem;
             background-color: rgba(15, 23, 42, 0.7);
             border: 1px solid var(--border-color);
             border-radius: var(--border-radius);
@@ -713,7 +710,7 @@
             transition: var(--transition);
             text-align: center;
             font-weight: 500;
-            font-size: 1rem;
+            font-size: 0.9rem;
         }
 
         .mode-btn.active, .mode-btn:hover {
@@ -727,15 +724,15 @@
         .control-buttons {
             display: flex;
             flex-direction: column;
-            gap: 1.2rem;
-            margin-top: 2.5rem;
+            gap: 1rem;
+            margin-top: 2rem;
         }
 
         .btn-primary, .btn-secondary {
-            padding: 1.2rem;
+            padding: 1rem;
             border-radius: var(--border-radius);
             border: none;
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
             transition: var(--transition);
@@ -771,7 +768,7 @@
 
         /* 理论背景部分 */
         .theory-section {
-            margin-bottom: 6rem;
+            margin-bottom: 4rem;
         }
 
         .theory-content {
@@ -839,7 +836,7 @@
 
         /* 关于部分 */
         .about-section {
-            margin-bottom: 6rem;
+            margin-bottom: 4rem;
         }
 
         .about-content {
@@ -971,17 +968,21 @@
         /* 响应式设计 */
         @media (max-width: 1200px) {
             .visualization-container {
-                flex-direction: column;
+                grid-template-columns: 1fr;
+                gap: 2rem;
             }
             
-            .canvas-container, .control-panel {
-                width: 100%;
-                min-width: unset;
+            .control-panel {
+                position: static;
+                max-height: none;
             }
             
-            .canvas-container {
-                height: 500px;
+            .canvas-wrapper {
                 min-height: 500px;
+            }
+            
+            #electronCanvas {
+                height: 500px;
             }
         }
 
@@ -1037,7 +1038,7 @@
             }
             
             .control-panel {
-                padding: 2rem;
+                padding: 1.5rem;
             }
             
             .about-content {
@@ -1073,9 +1074,12 @@
                 font-size: 2rem;
             }
             
-            .canvas-container {
-                height: 400px;
+            .canvas-wrapper {
                 min-height: 400px;
+            }
+            
+            #electronCanvas {
+                height: 400px;
             }
             
             .control-buttons {
@@ -1255,10 +1259,10 @@
             
             <div class="visualization-container">
                 <!-- 3D可视化区域 -->
-                <div class="canvas-container">
+                <div class="canvas-wrapper">
                     <canvas id="electronCanvas"></canvas>
                     <div class="canvas-overlay">
-                        <div class="loading-overlay" id="loadingText" style="display: none;">
+                        <div class="loading-overlay" id="loadingText">
                             <i class="fas fa-spinner fa-spin"></i>
                             <span>正在生成电子云数据...</span>
                         </div>
@@ -1480,7 +1484,7 @@
             }
         };
 
-        // 3D可视化引擎 - 修复版本
+        // 3D可视化引擎 - 修复版本，添加OrbitControls
         const VisualizationEngine = {
             scene: null,
             camera: null,
@@ -1529,15 +1533,15 @@
                     this.camera.position.set(0, 0, 25);
                     this.camera.lookAt(0, 0, 0);
                     
-                    // 创建渲染器 - 关键修复
+                    // 创建渲染器
                     this.renderer = new THREE.WebGLRenderer({ 
                         canvas: canvas,
                         antialias: true,
                         alpha: false,
-                        preserveDrawingBuffer: true  // 修复截图问题
+                        preserveDrawingBuffer: true
                     });
                     
-                    // 设置渲染器大小 - 关键修复
+                    // 设置渲染器大小
                     this.renderer.setSize(width, height, false);
                     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
                     
@@ -1547,6 +1551,23 @@
                     canvas.style.height = '100%';
                     
                     console.log('Renderer created and configured');
+                    
+                    // 添加OrbitControls - 关键修复
+                    if (typeof THREE.OrbitControls !== 'undefined') {
+                        this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+                        this.controls.enableDamping = true;
+                        this.controls.dampingFactor = 0.05;
+                        this.controls.enableZoom = true;
+                        this.controls.enableRotate = true;
+                        this.controls.enablePan = true;
+                        this.controls.autoRotate = false;
+                        this.controls.autoRotateSpeed = 2.0;
+                        this.controls.minDistance = 5;
+                        this.controls.maxDistance = 100;
+                        console.log('OrbitControls initialized');
+                    } else {
+                        console.warn('OrbitControls not available');
+                    }
                     
                     // 添加光源
                     this.addLights();
@@ -1684,7 +1705,7 @@
                 geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
                 geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
                 
-                // 创建点云材质 - 修复材质设置
+                // 创建点云材质
                 const material = new THREE.PointsMaterial({
                     size: 0.15,
                     vertexColors: true,
@@ -1829,6 +1850,12 @@
                 this.camera.position.set(0, 0, distance);
                 this.camera.lookAt(0, 0, 0);
                 
+                // 更新OrbitControls目标
+                if (this.controls) {
+                    this.controls.target.set(0, 0, 0);
+                    this.controls.update();
+                }
+                
                 console.log(`调整视图: n=${n}, 相机距离=${distance.toFixed(1)}`);
             },
             
@@ -1838,6 +1865,11 @@
                 
                 // 请求下一帧
                 this.animationFrameId = requestAnimationFrame(() => this.animate());
+                
+                // 更新OrbitControls
+                if (this.controls) {
+                    this.controls.update();
+                }
                 
                 // 旋转电子云（如果动画开启）
                 if (this.isAnimating && this.electronCloud && this.electronCloud.visible) {
@@ -1851,13 +1883,13 @@
                     this.nucleus.scale.set(scale, scale, scale);
                 }
                 
-                // 渲染场景 - 确保每次都渲染
+                // 渲染场景
                 if (this.renderer && this.scene && this.camera) {
                     this.renderer.render(this.scene, this.camera);
                 }
             },
             
-            // 窗口大小变化处理 - 修复版本
+            // 窗口大小变化处理
             onWindowResize() {
                 if (!this.camera || !this.renderer) return;
                 
@@ -1875,6 +1907,11 @@
                     // 更新渲染器
                     this.renderer.setSize(width, height, false);
                     
+                    // 更新OrbitControls
+                    if (this.controls) {
+                        this.controls.update();
+                    }
+                    
                     console.log(`窗口大小调整: ${width}x${height}`);
                 }
             },
@@ -1882,6 +1919,12 @@
             // 开始/停止动画
             toggleAnimation() {
                 this.isAnimating = !this.isAnimating;
+                
+                // 如果使用OrbitControls，可以切换自动旋转
+                if (this.controls) {
+                    this.controls.autoRotate = this.isAnimating;
+                }
+                
                 return this.isAnimating;
             },
             
@@ -1894,6 +1937,12 @@
                 // 重置电子云旋转
                 if (this.electronCloud) {
                     this.electronCloud.rotation.set(0, 0, 0);
+                }
+                
+                // 重置OrbitControls
+                if (this.controls) {
+                    this.controls.target.set(0, 0, 0);
+                    this.controls.reset();
                 }
                 
                 console.log('视图已重置');
@@ -1921,7 +1970,7 @@
                 this.electronCloud.material.needsUpdate = true;
             },
             
-            // 截图功能 - 修复版本
+            // 截图功能
             captureScreenshot() {
                 if (!this.renderer) return null;
                 
@@ -1943,6 +1992,10 @@
                 if (this.animationFrameId) {
                     cancelAnimationFrame(this.animationFrameId);
                     this.animationFrameId = null;
+                }
+                
+                if (this.controls) {
+                    this.controls.dispose();
                 }
                 
                 if (this.renderer) {
